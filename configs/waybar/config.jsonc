@@ -1,0 +1,54 @@
+// ~/.config/waybar/config.jsonc — minimal black bar
+{
+  "layer": "top",
+  "position": "top",
+  "height": 26,
+  "spacing": 0,
+
+  "modules-left": ["hyprland/workspaces", "hyprland/submap"],
+  "modules-center": ["clock"],
+  "modules-right": ["pulseaudio", "network", "cpu", "memory", "tray"],
+
+  "hyprland/workspaces": {
+    "format": "{id}",
+    "on-click": "activate"
+  },
+
+  "hyprland/submap": {
+    "format": "[{}]",
+    "tooltip": false
+  },
+
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}",
+    "tooltip-format": "<tt>{calendar}</tt>"
+  },
+
+  "pulseaudio": {
+    "format": "vol {volume}%",
+    "format-muted": "vol muted",
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "tooltip": false
+  },
+
+  "network": {
+    "format-wifi": "{essid} {signalStrength}%",
+    "format-ethernet": "eth",
+    "format-disconnected": "offline",
+    "tooltip-format": "{ifname} {ipaddr}"
+  },
+
+  "cpu": {
+    "format": "cpu {usage}%",
+    "interval": 2
+  },
+
+  "memory": {
+    "format": "mem {percentage}%",
+    "interval": 5
+  },
+
+  "tray": {
+    "spacing": 8
+  }
+}

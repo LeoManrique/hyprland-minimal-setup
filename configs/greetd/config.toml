@@ -1,0 +1,7 @@
+[terminal]
+vt = 1
+
+[default_session]
+# Minimal text greeter. Defaults to Hyprland; press F3 to pick GNOME if ever needed.
+command = "tuigreet --remember --remember-session --time --sessions /usr/share/wayland-sessions --cmd start-hyprland"
+user = "greeter"

@@ -1,0 +1,21 @@
+# Python virtualenv & build artifacts (large, machine-specific)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Secrets — never commit these (belt-and-suspenders; none exist in-repo today)
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+*.token
+.env
+.env.*

@@ -1,0 +1,50 @@
+/* ~/.config/waybar/style.css — flat solid black, monospace, no rounding */
+* {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background: #000000;
+  color: #c5c8c6;
+}
+
+#workspaces button {
+  padding: 0 8px;
+  color: #666666;
+  background: transparent;
+}
+
+#workspaces button.active {
+  color: #ffffff;
+  background: #1a1a1a;
+}
+
+#workspaces button.urgent {
+  color: #000000;
+  background: #cc6666;
+}
+
+#clock,
+#pulseaudio,
+#network,
+#cpu,
+#memory,
+#submap,
+#tray {
+  padding: 0 10px;
+  color: #c5c8c6;
+}
+
+#clock { color: #ffffff; }
+#network.disconnected { color: #cc6666; }
+#pulseaudio.muted { color: #666666; }
+
+tooltip {
+  background: #000000;
+  border: 1px solid #333333;
+  color: #c5c8c6;
+}
