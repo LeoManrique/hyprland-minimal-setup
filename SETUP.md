@@ -38,7 +38,7 @@ Old-syntax docs (if ever needed): <https://wiki.hypr.land/0.54.0/>
 | --- | --- | --- |
 | Compositor | `hyprland` | — |
 | Terminal | `foot` | tiny, Wayland-native |
-| Launcher | `tofi` (AUR) | dmenu-style, type-to-run |
+| Launcher | `fuzzel` | dmenu-style, type-to-run, app icons (Papirus-Dark) |
 | Bar | `waybar` | flat black, Nerd Font icon modules |
 | Notifications | `dunst` | minimal, themeable |
 | Idle/lock | `hypridle` + `hyprlock` | first-party |
@@ -56,7 +56,7 @@ skips anything you already have.
 
 ```bash
 sudo pacman -Syu --needed \
-  hyprland foot waybar dunst \
+  hyprland foot waybar dunst fuzzel papirus-icon-theme \
   hypridle hyprlock hyprpicker hyprpolkitagent \
   xdg-desktop-portal-hyprland qt5-wayland qt6-wayland \
   ttf-jetbrains-mono-nerd grim slurp cliphist wl-clipboard brightnessctl \
@@ -116,11 +116,17 @@ never stacks duplicates:
 yay -S --needed bluetui
 ```
 
-`tofi` is AUR-only:
+The bar's volume icon left-click runs `configs/hypr/scripts/audio-picker`, a
+small two-stage `fuzzel` chooser (pinned top-right like the bluetui panel):
+first pick **Output** or **Input**, then pick the device (current default is
+marked ●). The choice is set as default and
+any already-running streams move onto it. No extra package — it's just `pactl`
++ `fuzzel` (both already installed). Right-click mutes and scroll changes
+volume, so the quick actions stay on the icon. (Monitor sources are hidden.)
 
-```bash
-yay -S --needed tofi          # or: paru -S tofi
-```
+(`fuzzel` and `papirus-icon-theme` are in the official repos — already in the
+`pacman` line above. The launcher shows app icons via the Papirus-Dark theme;
+drop `icons-enabled`/`icon-theme` in `fuzzel.ini` for a pure-text look.)
 
 > Use `-Syu` (full refresh+upgrade), **never** a bare `-Sy` — partial upgrades
 > break Arch.
@@ -172,12 +178,12 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")   -- harmless to keep anywhere
 Copy from [`configs/`](./configs) into place:
 
 ```bash
-mkdir -p ~/.config/hypr ~/.config/foot ~/.config/waybar ~/.config/dunst ~/.config/tofi
-cp configs/hypr/*          ~/.config/hypr/
+mkdir -p ~/.config/hypr ~/.config/foot ~/.config/waybar ~/.config/dunst ~/.config/fuzzel
+cp -r configs/hypr/*       ~/.config/hypr/   # includes scripts/ (chmod +x them)
 cp configs/foot/foot.ini   ~/.config/foot/
 cp configs/waybar/*        ~/.config/waybar/
 cp configs/dunst/dunstrc   ~/.config/dunst/
-cp configs/tofi/config     ~/.config/tofi/
+cp configs/fuzzel/fuzzel.ini ~/.config/fuzzel/
 ```
 
 What each file is:
@@ -185,13 +191,14 @@ What each file is:
 | File | Purpose |
 | --- | --- |
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
+| `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
 | `hypr/hypridle.conf` | lock after 5 min, screen off after 10 min (hyprlang format) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
-| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem (Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`) · tray (bt icon click → floating `bluetui` TUI, toggles open/close, top-right via window rule) |
+| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem (Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`) · tray. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Both pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
 | `dunst/dunstrc` | black notifications |
-| `tofi/config` | centered vertical launcher, white-bar selection |
+| `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark) |
 
 > **hypridle/hyprlock use the old `.conf` (hyprlang) format** — that's correct;
 > only the main Hyprland config moved to Lua. Other `hypr*` tools didn't.
@@ -385,14 +392,15 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | Keys | Action |
 | --- | --- |
 | `SUPER + C` | terminal (foot / console) |
-| `SUPER + R` or `SUPER + Space` | launcher (tofi; latter is macOS Cmd+Space muscle memory) |
+| `SUPER + B` | default browser (`gtk-launch "$(xdg-settings get default-web-browser)"` — follows your `xdg-settings` default) |
+| `SUPER + R` or `SUPER + Space` | launcher (fuzzel; latter is macOS Cmd+Space muscle memory) |
 | `SUPER + Q` | close window (macOS Cmd+Q quit) |
 | `SUPER + M` | exit Hyprland |
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |
 | `SUPER + L` or `SUPER + CTRL + Q` | lock now (hyprlock; latter is macOS-style) |
 | `SUPER + E` | color picker (hyprpicker) |
-| `SUPER + .` | clipboard history (cliphist via tofi) |
+| `SUPER + .` | clipboard history (cliphist via fuzzel --dmenu) |
 | `SUPER + arrows` | move focus |
 | `SUPER + SHIFT + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |
@@ -477,6 +485,64 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 
 ---
 
+## External A/V devices (iPhone webcam, DJI mic)
+
+These are runtime peripherals, not part of the Hyprland config, but recorded
+here so the setup is reproducible.
+
+### iPhone as a USB webcam
+
+There is **no native Continuity Camera on Linux**, and the off-the-shelf apps
+were rejected: **DroidCam** watermarks unless you pay, and **Iriun** is
+**Wi-Fi-only for iPhone** (its USB mode is Android-only). The chosen route is a
+**self-built app** ("USBCam", built on a Mac Mini with Xcode) — the iPhone
+captures its camera and serves it as a multipart-MJPEG HTTP stream that the
+Linux host reaches over the cable via `usbmuxd`/`iproxy`. No watermark, no
+Wi-Fi, full resolution.
+
+**Linux prerequisites** (only `v4l2loopback` had to be added — `usbmuxd` /
+`libimobiledevice`/`iproxy` are already present as iOS/PipeWire deps):
+
+```bash
+sudo pacman -S v4l2loopback-dkms     # official extra/ module → virtual /dev/video0
+```
+
+`exclusive_caps=1` is **required** or Chrome/Firefox/Zoom won't see the device:
+
+```bash
+# /etc/modprobe.d/v4l2loopback.conf
+options v4l2loopback exclusive_caps=1 card_label="OBS Virtual Camera"
+# /etc/modules-load.d/v4l2loopback.conf   (auto-load at boot)
+v4l2loopback
+```
+
+```bash
+sudo modprobe v4l2loopback           # creates /dev/video0 "OBS Virtual Camera"
+v4l2-ctl --list-devices              # verify
+```
+
+**Wire protocol** (iPhone is the server; usbmux is host-initiated so the phone
+must listen): TCP **:5000**, HTTP `multipart/x-mixed-replace; boundary=frame`,
+JPEG frames. Linux receiver:
+
+```bash
+iproxy 5000:5000 &                                   # tunnel USB → iPhone:5000
+ffmpeg -f mpjpeg -i http://127.0.0.1:5000 \
+       -pix_fmt yuv420p -f v4l2 /dev/video0          # feed the virtual cam
+```
+
+> The iOS half (USBCam) lives in its own project, not this repo. Built/signed on
+> a Mac Mini; a free Apple cert expires every 7 days. Status: app not yet built;
+> the Linux side above is ready.
+
+### DJI Mic Mini 2 (USB receiver)
+
+Plug the receiver in and **power it ON** — DJI receivers act as a USB *drive*
+when off and a UAC *audio device* only when on (off/asleep shows a
+vendor-specific `class ff` interface and a ~once-per-minute re-enumeration loop,
+never appearing in `/proc/asound/cards`). Once on it shows up as a PipeWire
+source and is selectable in OBS / `pactl list short sources`. No driver needed.
+
 ## Quick gotcha recap
 
 - Config is **Lua** (`hyprland.lua`), not hyprlang — ignore old tutorials.
@@ -490,3 +556,4 @@ hl.config({ xwayland = { force_zero_scaling = true } })
   is zoomed top-left; unsolved, and **don't** use `fbdev=0` (it black-screens).
   Hyprland itself renders both monitors fine.
 - GTK3/webview apps + fractional scale = blur; see the section above.
+- iPhone webcam = self-built USBCam app (MJPEG over `usbmuxd`/`iproxy`) + `v4l2loopback` (`exclusive_caps=1`); DroidCam (watermark) and Iriun (Wi-Fi-only on iOS) were rejected. DJI mic must be powered **on** to enumerate as audio.

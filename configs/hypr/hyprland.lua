@@ -50,7 +50,7 @@ hl.config({
   },
 
   animations = {
-    enabled = false,              -- instant/snappy. Set true if you want motion.
+    enabled = true,               -- Hyprland's built-in default curves: smooth open/close/move/resize.
   },
 
   input = {
@@ -132,8 +132,9 @@ local mod = "SUPER"
 
 -- Core
 hl.bind(mod .. " + C", hl.dsp.exec_cmd("foot"))                          -- terminal (console)
-hl.bind(mod .. " + R", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))      -- launcher
-hl.bind(mod .. " + Space", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))  -- launcher (macOS Cmd+Space muscle memory)
+hl.bind(mod .. " + B", hl.dsp.exec_cmd('gtk-launch "$(xdg-settings get default-web-browser)"'))  -- default browser
+hl.bind(mod .. " + R", hl.dsp.exec_cmd("fuzzel"))                        -- launcher (icons via Papirus-Dark)
+hl.bind(mod .. " + Space", hl.dsp.exec_cmd("fuzzel"))                    -- launcher (macOS Cmd+Space muscle memory)
 hl.bind(mod .. " + Q", hl.dsp.window.close())                            -- close window (macOS Cmd+Q quit)
 hl.bind(mod .. " + M", hl.dsp.exit())                                    -- exit Hyprland
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
@@ -143,8 +144,8 @@ hl.bind(mod .. " + CTRL + Q", hl.dsp.exec_cmd("hyprlock"))               -- lock
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))        -- reload config
 hl.bind(mod .. " + E", hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick color -> clipboard
 
--- Clipboard history picker (via tofi)
-hl.bind(mod .. " + period", hl.dsp.exec_cmd("cliphist list | tofi | cliphist decode | wl-copy"))
+-- Clipboard history picker (via fuzzel --dmenu)
+hl.bind(mod .. " + period", hl.dsp.exec_cmd("cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"))
 
 -- Move focus
 hl.bind(mod .. " + Left",  hl.dsp.focus({ direction = "l" }))

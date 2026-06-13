@@ -28,6 +28,11 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
+- **External A/V**: iPhone-as-webcam over USB via a **self-built MJPEG app**
+  (`usbmuxd`/`iproxy` + `v4l2loopback`; no native Continuity Camera on Linux, and
+  DroidCam/Iriun were rejected) and the DJI Mic Mini 2 receiver — both documented
+  in SETUP.md ("External A/V devices").
+
 Start with **[SETUP.md](./SETUP.md)**.
 
 ## Attribution

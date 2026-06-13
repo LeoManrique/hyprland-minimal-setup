@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# audio-picker — set the default audio device via fuzzel, in two stages:
+#   1. choose Output (sink) or Input (source)
+#   2. choose the device for that category (current default marked with ●)
+# The chosen device becomes default and any running streams move onto it.
+# Bound to the waybar volume-icon left-click. No extra deps: pactl + fuzzel.
+set -euo pipefail
+
+OUT=""   # Nerd Font speaker  (output / sink)
+IN=""    # Nerd Font microphone (input / source)
+
+# Pinned top-right (like the bluetui panel), 12px inset under the bar. Anchor is
+# set here per-invocation, not in fuzzel.ini, so the SUPER+R launcher stays centered.
+pick() {
+  fuzzel --dmenu --prompt "$1" --lines "${2:-8}" --width 46 \
+    --anchor top-right --x-margin 12 --y-margin 40
+}
+
+# Stage 1 — category.
+kind=$(printf '%s\n%s\n' "$OUT  Output" "$IN  Input" | pick "audio: " 2)
+[ -z "$kind" ] && exit 0
+
+case "$kind" in
+  *Output) list=sinks;   getdef=$(pactl get-default-sink)
+           setcmd=set-default-sink;   moveq=sink-inputs;    movecmd=move-sink-input ;;
+  *Input)  list=sources; getdef=$(pactl get-default-source)
+           setcmd=set-default-source; moveq=source-outputs; movecmd=move-source-output ;;
+  *) exit 0 ;;
+esac
+
+# Stage 2 — devices of that category. Rows: "<mark><description>\t<pulse-name>".
+# Monitor sources are hidden; the current default is marked ●.
+rows=$(pactl list "$list" | awk -v def="$getdef" '
+  /^[ \t]+Name:/        { name=$2; mon=(name ~ /\.monitor$/) }
+  /^[ \t]+Description:/ { sub(/^[ \t]+Description: /,"");
+                          if (!mon) { mark=(name==def ? "● " : "  "); print mark $0 "\t" name } }')
+
+[ -z "$rows" ] && exit 0
+
+choice=$(printf '%s\n' "$rows" | cut -f1 | pick "$kind: ")
+[ -z "$choice" ] && exit 0
+
+name=$(printf '%s\n' "$rows" | awk -F'\t' -v c="$choice" '$1==c { print $2; exit }')
+[ -z "$name" ] && exit 0
+
+pactl "$setcmd" "$name"
+pactl list short "$moveq" | while read -r id _; do
+  pactl "$movecmd" "$id" "$name" 2>/dev/null || true
+done
