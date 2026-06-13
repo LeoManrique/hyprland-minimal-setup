@@ -39,7 +39,7 @@ Old-syntax docs (if ever needed): <https://wiki.hypr.land/0.54.0/>
 | Compositor | `hyprland` | — |
 | Terminal | `foot` | tiny, Wayland-native |
 | Launcher | `tofi` (AUR) | dmenu-style, type-to-run |
-| Bar | `waybar` | flat black, text modules |
+| Bar | `waybar` | flat black, Nerd Font icon modules |
 | Notifications | `dunst` | minimal, themeable |
 | Idle/lock | `hypridle` + `hyprlock` | first-party |
 | Login | plain `getty` | **no display manager** — text TTY login; Hyprland started manually with `start-hyprland` |
@@ -105,8 +105,12 @@ sudo pacman -Syu --needed \
 sudo systemctl enable --now bluetooth
 ```
 
-The bar's bluetooth click opens `bluetui` (AUR), a keyboard-driven TUI for
-scanning/pairing/connecting — no commands to memorize:
+The bar's bluetooth icon (`󰂯`) toggles `bluetui` (AUR), a keyboard-driven TUI
+for scanning/pairing/connecting — no commands to memorize. It opens in a
+floating `foot` window (`--app-id=bluetui`) pinned to the top-right of the
+active monitor via a `hl.window_rule` in `hyprland.lua`; the click is a true
+toggle (`pkill -x bluetui || foot ...`), so clicking again closes it and it
+never stacks duplicates:
 
 ```bash
 yay -S --needed bluetui
@@ -184,7 +188,7 @@ What each file is:
 | `hypr/hypridle.conf` | lock after 5 min, screen off after 10 min (hyprlang format) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
-| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem · tray (bt click → `bluetui` TUI in foot) |
+| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem (Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`) · tray (bt icon click → floating `bluetui` TUI, toggles open/close, top-right via window rule) |
 | `waybar/style.css` | flat solid-black bar |
 | `dunst/dunstrc` | black notifications |
 | `tofi/config` | centered vertical launcher, white-bar selection |

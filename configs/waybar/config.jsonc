@@ -25,37 +25,43 @@
   },
 
   "pulseaudio": {
-    "format": "vol {volume}%",
-    "format-muted": "vol muted",
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "headphone": "󰋋",
+      "headset": "󰋎",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "tooltip": false
   },
 
   "bluetooth": {
-    "format": "bt on",
-    "format-disabled": "bt off",
-    "format-off": "bt off",
-    "format-connected": "bt {num_connections}",
+    "format": "󰂯",
+    "format-disabled": "󰂲",
+    "format-off": "󰂲",
+    "format-connected": "󰂱 {num_connections}",
     "tooltip-format": "{controller_alias}",
     "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
     "tooltip-format-enumerate-connected": "{device_alias}",
-    "on-click": "foot -e bluetui"
+    "on-click": "pkill -x bluetui || foot --app-id=bluetui -e bluetui"
   },
 
   "network": {
-    "format-wifi": "{essid} {signalStrength}%",
-    "format-ethernet": "eth",
-    "format-disconnected": "offline",
-    "tooltip-format": "{ifname} {ipaddr}"
+    "format-wifi": "󰖩 {signalStrength}%",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰖪",
+    "tooltip-format": "{ifname} {ipaddr}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}"
   },
 
   "cpu": {
-    "format": "cpu {usage}%",
+    "format": "󰻠 {usage}%",
     "interval": 2
   },
 
   "memory": {
-    "format": "mem {percentage}%",
+    "format": "󰍛 {percentage}%",
     "interval": 5
   },
 

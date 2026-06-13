@@ -74,6 +74,24 @@ hl.config({
 })
 
 --------------------------------------------------------------------------------
+-- WINDOW RULES
+--------------------------------------------------------------------------------
+-- bluetui (the waybar bluetooth-click TUI) opens in a dedicated foot instance
+-- launched with `--app-id=bluetui`, which Hyprland sees as the window `class`.
+-- Float it as a small panel pinned to the top-right of the active monitor,
+-- tucked just under the 26px bar. The waybar click toggles it (open ⇄ close)
+-- and never stacks duplicates.
+hl.window_rule({
+  match = { class = "bluetui" },
+  float = true,
+  size  = { 860, 560 },
+  -- Anchor by the known width (860 + 12 margin), NOT `window_w`: the move
+  -- expression is evaluated before the size rule applies, so `window_w` would
+  -- be the pre-resize width and the bigger window would overhang the edge.
+  move  = { "monitor_w - 872", "40" },
+})
+
+--------------------------------------------------------------------------------
 -- AUTOSTART
 --------------------------------------------------------------------------------
 hl.on("hyprland.start", function()
