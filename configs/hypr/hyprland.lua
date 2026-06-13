@@ -96,12 +96,14 @@ local mod = "SUPER"
 
 -- Core
 hl.bind(mod .. " + Q", hl.dsp.exec_cmd("foot"))                          -- terminal
-hl.bind(mod .. " + R", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))  -- launcher
+hl.bind(mod .. " + R", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))      -- launcher
+hl.bind(mod .. " + Space", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))  -- launcher (macOS Cmd+Space muscle memory)
 hl.bind(mod .. " + C", hl.dsp.window.close())                            -- close window
 hl.bind(mod .. " + M", hl.dsp.exit())                                    -- exit Hyprland
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))                      -- lock now
+hl.bind(mod .. " + CTRL + Q", hl.dsp.exec_cmd("hyprlock"))               -- lock now (macOS-style Ctrl+Cmd+Q)
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))        -- reload config
 hl.bind(mod .. " + E", hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick color -> clipboard
 
@@ -109,20 +111,16 @@ hl.bind(mod .. " + E", hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick
 hl.bind(mod .. " + period", hl.dsp.exec_cmd("cliphist list | tofi | cliphist decode | wl-copy"))
 
 -- Move focus
-hl.bind(mod .. " + h", hl.dsp.focus({ direction = "l" }))
-hl.bind(mod .. " + l", hl.dsp.focus({ direction = "r" }))
-hl.bind(mod .. " + k", hl.dsp.focus({ direction = "u" }))
-hl.bind(mod .. " + j", hl.dsp.focus({ direction = "d" }))
 hl.bind(mod .. " + Left",  hl.dsp.focus({ direction = "l" }))
 hl.bind(mod .. " + Right", hl.dsp.focus({ direction = "r" }))
 hl.bind(mod .. " + Up",    hl.dsp.focus({ direction = "u" }))
 hl.bind(mod .. " + Down",  hl.dsp.focus({ direction = "d" }))
 
 -- Move window
-hl.bind(mod .. " + SHIFT + h", hl.dsp.window.move({ direction = "l" }))
-hl.bind(mod .. " + SHIFT + l", hl.dsp.window.move({ direction = "r" }))
-hl.bind(mod .. " + SHIFT + k", hl.dsp.window.move({ direction = "u" }))
-hl.bind(mod .. " + SHIFT + j", hl.dsp.window.move({ direction = "d" }))
+hl.bind(mod .. " + SHIFT + Left",  hl.dsp.window.move({ direction = "l" }))
+hl.bind(mod .. " + SHIFT + Right", hl.dsp.window.move({ direction = "r" }))
+hl.bind(mod .. " + SHIFT + Up",    hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + SHIFT + Down",  hl.dsp.window.move({ direction = "d" }))
 
 -- Workspaces 1..10
 for i = 1, 9 do

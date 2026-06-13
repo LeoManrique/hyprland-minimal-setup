@@ -1,2 +1,24 @@
+# /etc/default/grub — relevant lines for the minimal text GRUB. Edit these,
+# then run:  sudo grub-mkconfig -o /boot/grub/grub.cfg
+
+# Text-mode GRUB (no graphical theme rendering for the menu itself)
 GRUB_TERMINAL_INPUT=console
 GRUB_TERMINAL_OUTPUT=console
+
+# Console framebuffer for the GRUB menu, and keep that framebuffer for the
+# kernel. "keep" matters on NVIDIA when nvidia_drm.fbdev=0 (see below): it lets
+# the single-head firmware framebuffer (simpledrm) own the text console.
+GRUB_GFXMODE=3840x2160,auto
+GRUB_GFXPAYLOAD_LINUX=keep
+
+GRUB_CMDLINE_LINUX_DEFAULT="quiet nvidia_drm.modeset=1"
+
+# ---------------------------------------------------------------------------
+# NOTE — multi-monitor console fix lives in /etc/modprobe.d/nvidia.conf, NOT
+# here. On dual *mismatched* monitors, nvidia's fbdev clones the console and
+# falls back to a shared 1080p mode while sizing the canvas to 4K, so the
+# greeter is zoomed into the top-left quarter on both screens. Fix there:
+#   options nvidia_drm modeset=1 fbdev=0
+# then: sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg
+# (The `video=CONNECTOR:MODE` kernel pin does NOT work — nvidia ignores it.)
+# ---------------------------------------------------------------------------

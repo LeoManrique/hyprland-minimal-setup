@@ -10,7 +10,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
 | --- | --- |
 | **[SETUP.md](./SETUP.md)** | Full step-by-step reproduction guide (install → greeter → first launch) |
 | [`configs/`](./configs) | Exact working copies of every config file |
-| [`v0.55.4/`](./v0.55.4) | Offline mirror of the Hyprland wiki — the **Lua**-syntax reference |
+| [`wiki/`](./wiki) | Offline mirror of the Hyprland wiki — the **Lua**-syntax reference |
 | `html2md.py` | Small script used to convert the mirrored wiki HTML → Markdown |
 
 ## Highlights / hard-won notes
@@ -26,7 +26,7 @@ Start with **[SETUP.md](./SETUP.md)**.
 
 ## Attribution
 
-The [`v0.55.4/`](./v0.55.4) directory is an **unmodified offline mirror of the
+The [`wiki/`](./wiki) directory is an **offline mirror of the
 official Hyprland wiki** (<https://wiki.hypr.land>), included here purely as a
 reference. That content is the work of the **Hyprland project and its
 contributors** and remains under its original license — not part of this repo's

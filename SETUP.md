@@ -5,7 +5,7 @@ wallpaper, a thin black bar, dmenu-style launcher, text login, text GRUB.
 Built to grow from a bare TTY into a productive setup.
 
 Exact working copies of every config live in [`configs/`](./configs) next to this
-file. The offline copy of the Hyprland wiki is in [`v0.55.4/`](./v0.55.4) (it's
+file. The offline copy of the Hyprland wiki is in [`wiki/`](./wiki) (it's
 the reference for the **Lua** config syntax — see the big gotcha below).
 
 > **Tested on:** Arch Linux, Hyprland 0.55.x, dual 4K monitors, NVIDIA RTX 5060 Ti.
@@ -77,7 +77,7 @@ yay -S --needed tofi          # or: paru -S tofi
 ## Step 2 — NVIDIA (OPTIONAL — skip on AMD/Intel)
 
 Hyprland runs fine on AMD/Intel with no special steps. **Only do this section if
-you have an NVIDIA GPU.** Reference: [`v0.55.4/Nvidia/`](./v0.55.4/Nvidia).
+you have an NVIDIA GPU.** Reference: [`wiki/Nvidia/`](./wiki/Nvidia).
 
 **a) Driver.** Use the open kernel modules (**required** for 50xx-series and
 newer; recommended for Turing/Ampere/Ada too):
@@ -111,6 +111,10 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")   -- harmless to keep anywhere
 ---
 
 ## Step 3 — Drop in the config files
+
+> **These are copies, not symlinks.** The live config lives in `~/.config/`;
+> editing `configs/` here and reloading does nothing until you re-copy. Re-run the
+> relevant `cp` (then `hyprctl reload`) after every change.
 
 Copy from [`configs/`](./configs) into place:
 
@@ -197,6 +201,38 @@ sudo cp configs/system/vconsole.conf /etc/vconsole.conf   # FONT=ter-132b
 On a 1080p screen, `ter-116b`/`ter-118b` is plenty. Applied at boot by
 `systemd-vconsole-setup`; to apply now: `sudo setfont ter-132b`.
 
+> **Gotcha (NVIDIA + multi-monitor): greeter is zoomed into the top-left
+> quarter on BOTH screens / shutdown text cropped.** Symptom: the same greeter
+> appears mirrored on both monitors, zoomed in, showing only the top-left
+> chunk. Confirm with `cat /sys/class/graphics/fb0/virtual_size` (4K) vs
+> `/sys/class/graphics/fb0/modes` (1080p) — a 4K console *canvas* scanned out at
+> 1080p.
+> **Cause:** with `nvidia_drm.fbdev=1` (the default since driver 570), NVIDIA
+> drives the text console and **clones it to every monitor**. If your monitors
+> are different models (here an MSI 4K + an LG 4K with different EDID timings),
+> the only mode NVIDIA is certain both share is **1920×1080@60**, so it scans
+> that out while still sizing the canvas to the 4K preferred mode → a 4K grid
+> shown through a 1080p window, which each panel upscales.
+> **Fix:** take NVIDIA out of the console path so the single-head firmware
+> framebuffer (`simpledrm`) owns it — no clone, no panning. In
+> `/etc/modprobe.d/nvidia.conf`:
+> ```
+> options nvidia_drm modeset=1 fbdev=0
+> ```
+> Keep `GRUB_GFXPAYLOAD_LINUX=keep` so `simpledrm` has a real framebuffer, then
+> rebuild and reboot:
+> ```bash
+> sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg
+> ```
+> The greeter then appears on one monitor (the firmware's primary), centered.
+> Trade-offs: the second monitor is blank at the greeter, and because NVIDIA no
+> longer manages the console, the TTY may be black if you *exit* a Hyprland
+> session back to the greeter without rebooting (a full reboot/shutdown is
+> fine). NVIDIA's own `video=CONNECTOR:MODE` and `GFXPAYLOAD` levers do **not**
+> fix this — it's the clone-mode selection, not the handoff.
+> (Single-model identical monitors usually clone fine at native and don't hit
+> this — keep the default `fbdev=1` in that case.)
+
 ---
 
 ## Step 7 — Switch the display manager
@@ -223,16 +259,16 @@ Default session command is `start-hyprland` (do **not** `sudo` it). Mod = `SUPER
 | Keys | Action |
 | --- | --- |
 | `SUPER + Q` | terminal (foot) |
-| `SUPER + R` | launcher (tofi) |
+| `SUPER + R` or `SUPER + Space` | launcher (tofi; latter is macOS Cmd+Space muscle memory) |
 | `SUPER + C` | close window |
 | `SUPER + M` | exit Hyprland |
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |
-| `SUPER + L` | lock now (hyprlock) |
+| `SUPER + L` or `SUPER + CTRL + Q` | lock now (hyprlock; latter is macOS-style) |
 | `SUPER + E` | color picker (hyprpicker) |
 | `SUPER + .` | clipboard history (cliphist via tofi) |
-| `SUPER + h/j/k/l` (or arrows) | move focus |
-| `SUPER + SHIFT + h/j/k/l` | move window |
+| `SUPER + arrows` | move focus |
+| `SUPER + SHIFT + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |
 | `SUPER + SHIFT + 1..0` | move window to workspace |
 | `SUPER + S` / `SUPER + SHIFT + S` | toggle / move-to scratchpad |

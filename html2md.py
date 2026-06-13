@@ -16,8 +16,8 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
-SRC = Path(sys.argv[1] if len(sys.argv) > 1 else "v0.55.4")
-DST = Path(sys.argv[2] if len(sys.argv) > 2 else "v0.55.4-md")
+SRC = Path(sys.argv[1] if len(sys.argv) > 1 else "wiki")
+DST = Path(sys.argv[2] if len(sys.argv) > 2 else "wiki-md")
 
 
 def convert(html: str) -> str:
