@@ -208,6 +208,8 @@ What each file is:
   `scale = 1.25`. Run `hyprctl monitors all` to get your output names, then fix
   names/positions/scale. See [Monitors & scaling](#monitors--fractional-scaling).
 - **Keyboard:** `input = { kb_layout = "us" }` — change if not US.
+- **Focus:** `input = { follow_mouse = 0 }` — focus changes only on click, not on
+  hover. Set back to `1` for classic focus-follows-mouse.
 
 ---
 
@@ -402,7 +404,7 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + E` | color picker (hyprpicker) |
 | `SUPER + .` | clipboard history (cliphist via fuzzel --dmenu) |
 | `SUPER + arrows` | move focus |
-| `SUPER + SHIFT + arrows` | move window |
+| `SUPER + CONTROL + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |
 | `SUPER + SHIFT + 1..0` | move window to workspace |
 | `SUPER + S` / `SUPER + SHIFT + S` | toggle / move-to scratchpad |

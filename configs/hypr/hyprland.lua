@@ -27,7 +27,7 @@ hl.env("XCURSOR_SIZE", "24")
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1.25 })
 -- Physical layout: DP-2 on the LEFT, DP-1 on the RIGHT (each 3072px wide @ scale 1.25).
 hl.monitor({ output = "DP-2", mode = "preferred", position = "0x0", scale = 1.25 })
-hl.monitor({ output = "DP-1", mode = "preferred", position = "3072x0", scale = 1.25 })
+hl.monitor({ output = "DP-1", mode = "3840x2160@160", position = "3072x0", scale = 1.25 })
 
 --------------------------------------------------------------------------------
 -- LOOK & FEEL  (minimal / flat / black)
@@ -55,7 +55,7 @@ hl.config({
 
   input = {
     kb_layout = "us",             -- <-- change to your layout if needed
-    follow_mouse = 1,
+    follow_mouse = 0,            -- focus changes only on click, not on hover
     sensitivity = 0,
   },
 
@@ -154,10 +154,10 @@ hl.bind(mod .. " + Up",    hl.dsp.focus({ direction = "u" }))
 hl.bind(mod .. " + Down",  hl.dsp.focus({ direction = "d" }))
 
 -- Move window
-hl.bind(mod .. " + SHIFT + Left",  hl.dsp.window.move({ direction = "l" }))
-hl.bind(mod .. " + SHIFT + Right", hl.dsp.window.move({ direction = "r" }))
-hl.bind(mod .. " + SHIFT + Up",    hl.dsp.window.move({ direction = "u" }))
-hl.bind(mod .. " + SHIFT + Down",  hl.dsp.window.move({ direction = "d" }))
+hl.bind(mod .. " + CONTROL + Left",  hl.dsp.window.move({ direction = "l" }))
+hl.bind(mod .. " + CONTROL + Right", hl.dsp.window.move({ direction = "r" }))
+hl.bind(mod .. " + CONTROL + Up",    hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + CONTROL + Down",  hl.dsp.window.move({ direction = "d" }))
 
 -- Workspaces 1..10
 for i = 1, 9 do
