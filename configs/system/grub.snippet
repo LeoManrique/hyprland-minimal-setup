@@ -1,24 +1,26 @@
 # /etc/default/grub — relevant lines for the minimal text GRUB. Edit these,
 # then run:  sudo grub-mkconfig -o /boot/grub/grub.cfg
 
-# Text-mode GRUB (no graphical theme rendering for the menu itself)
+# Text-mode GRUB menu (no graphical theme rendering)
 GRUB_TERMINAL_INPUT=console
 GRUB_TERMINAL_OUTPUT=console
 
-# Console framebuffer for the GRUB menu, and keep that framebuffer for the
-# kernel. "keep" matters on NVIDIA when nvidia_drm.fbdev=0 (see below): it lets
-# the single-head firmware framebuffer (simpledrm) own the text console.
+# Console framebuffer for the GRUB menu
 GRUB_GFXMODE=3840x2160,auto
 GRUB_GFXPAYLOAD_LINUX=keep
 
+# Kernel cmdline. Just modeset + resume; nothing exotic.
 GRUB_CMDLINE_LINUX_DEFAULT="quiet nvidia_drm.modeset=1"
 
 # ---------------------------------------------------------------------------
-# NOTE — multi-monitor console fix lives in /etc/modprobe.d/nvidia.conf, NOT
-# here. On dual *mismatched* monitors, nvidia's fbdev clones the console and
-# falls back to a shared 1080p mode while sizing the canvas to 4K, so the
-# greeter is zoomed into the top-left quarter on both screens. Fix there:
-#   options nvidia_drm modeset=1 fbdev=0
-# then: sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg
-# (The `video=CONNECTOR:MODE` kernel pin does NOT work — nvidia ignores it.)
+# NOTE — on mismatched dual monitors, NVIDIA clones the *text console* and
+# falls back to a shared 1080p mode while sizing the canvas to 4K, so the GRUB
+# menu / login / shutdown text is zoomed into the top-left quarter on both
+# screens. This is UNSOLVED. Things that do NOT fix it (don't bother):
+#   - video=CONNECTOR:MODE on the cmdline   (NVIDIA ignores it)
+#   - GRUB_GFXPAYLOAD_LINUX=text
+# And do NOT set `nvidia_drm.fbdev=0`: it black-screened/soft-locked this
+# hardware after GRUB. We just live with the cosmetic console issue — the login
+# is a plain getty (see SETUP.md Step 4) and Hyprland renders both monitors
+# correctly once it starts. See SETUP.md Step 6 for the full write-up.
 # ---------------------------------------------------------------------------

@@ -21,6 +21,12 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
 - **NVIDIA is optional** and clearly isolated (skip it on AMD/Intel).
 - **Fractional-scaling + GTK3/webview apps** (Tauri/WebKitGTK) blur — SETUP.md
   documents the working fix (XWayland zero-scaling + `GDK_DPI_SCALE`).
+- **gnome-keyring removed** — it popped an unlock dialog on every getty login
+  (no PAM step to auto-unlock it). Uninstalled; SETUP.md Step 1 explains why.
+- **Leftover GNOME desktop stripped** — gdm/shell/mutter/session/control-center/
+  portal-gnome and most apps removed (kept system-monitor + disk-utility). SETUP.md
+  Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
+  and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
 Start with **[SETUP.md](./SETUP.md)**.
 

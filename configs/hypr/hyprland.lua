@@ -77,6 +77,17 @@ hl.config({
 -- AUTOSTART
 --------------------------------------------------------------------------------
 hl.on("hyprland.start", function()
+  -- Bring up the systemd user graphical session FIRST. We log in on a plain
+  -- getty (no display manager), so nothing else starts `graphical-session.target`
+  -- — and every unit bound to it (xremap, the polkit agent, the gvfs/portal
+  -- services) would silently never run. A display manager used to do this for
+  -- us. Import the Wayland env before starting the target so those services
+  -- inherit WAYLAND_DISPLAY / the Hyprland instance. See SETUP.md Step 4.
+  hl.exec_cmd(
+    "systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP "
+    .. "&& dbus-update-activation-environment --systemd WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP "
+    .. "&& systemctl --user start hyprland-session.target"
+  )
   -- Polkit auth agent (GUI privilege prompts)
   hl.exec_cmd("systemctl --user start hyprpolkitagent")
   -- Bar + notifications
@@ -89,16 +100,23 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("wl-paste --type image --watch cliphist store")
 end)
 
+-- Tear the graphical session back down on exit (SUPER + M) so the next launch
+-- starts a clean session instead of leaving xremap/portals bound to a stale
+-- WAYLAND_DISPLAY from the previous run.
+hl.on("hyprland.shutdown", function()
+  hl.exec_cmd("systemctl --user stop hyprland-session.target")
+end)
+
 --------------------------------------------------------------------------------
 -- KEYBINDS  (mod = SUPER / Windows key)
 --------------------------------------------------------------------------------
 local mod = "SUPER"
 
 -- Core
-hl.bind(mod .. " + Q", hl.dsp.exec_cmd("foot"))                          -- terminal
+hl.bind(mod .. " + C", hl.dsp.exec_cmd("foot"))                          -- terminal (console)
 hl.bind(mod .. " + R", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))      -- launcher
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("tofi-drun --drun-launch=true"))  -- launcher (macOS Cmd+Space muscle memory)
-hl.bind(mod .. " + C", hl.dsp.window.close())                            -- close window
+hl.bind(mod .. " + Q", hl.dsp.window.close())                            -- close window (macOS Cmd+Q quit)
 hl.bind(mod .. " + M", hl.dsp.exit())                                    -- exit Hyprland
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
@@ -143,8 +161,8 @@ hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'))     -- regio
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd("grim - | wl-copy"))            -- full screen
 
 -- Media / brightness keys
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+"))
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-"))
 hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl set 5%+"))
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"))

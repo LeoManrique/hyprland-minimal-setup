@@ -7,7 +7,7 @@
 
   "modules-left": ["hyprland/workspaces", "hyprland/submap"],
   "modules-center": ["clock"],
-  "modules-right": ["pulseaudio", "network", "cpu", "memory", "tray"],
+  "modules-right": ["pulseaudio", "bluetooth", "network", "cpu", "memory", "tray"],
 
   "hyprland/workspaces": {
     "format": "{id}",
@@ -29,6 +29,17 @@
     "format-muted": "vol muted",
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     "tooltip": false
+  },
+
+  "bluetooth": {
+    "format": "bt on",
+    "format-disabled": "bt off",
+    "format-off": "bt off",
+    "format-connected": "bt {num_connections}",
+    "tooltip-format": "{controller_alias}",
+    "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "foot -e bluetui"
   },
 
   "network": {

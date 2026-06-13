@@ -42,7 +42,7 @@ Old-syntax docs (if ever needed): <https://wiki.hypr.land/0.54.0/>
 | Bar | `waybar` | flat black, text modules |
 | Notifications | `dunst` | minimal, themeable |
 | Idle/lock | `hypridle` + `hyprlock` | first-party |
-| Greeter | `greetd` + `tuigreet` | **text** login |
+| Login | plain `getty` | **no display manager** — text TTY login; Hyprland started manually with `start-hyprland` |
 | Bootloader | GRUB text console | minimal |
 | Polkit | `hyprpolkitagent` | GUI privilege prompts |
 
@@ -60,7 +60,56 @@ sudo pacman -Syu --needed \
   hypridle hyprlock hyprpicker hyprpolkitagent \
   xdg-desktop-portal-hyprland qt5-wayland qt6-wayland \
   ttf-jetbrains-mono-nerd grim slurp cliphist wl-clipboard brightnessctl \
-  greetd greetd-tuigreet terminus-font
+  terminus-font bluez bluez-utils
+```
+
+> No display manager / greeter package is needed — login is the plain `getty`
+> text console (Step 4).
+
+> **gnome-keyring is intentionally removed.** On a getty login there is no PAM
+> step to auto-unlock the GNOME login keyring, so every Hyprland launch popped
+> an "Authentication required — the login keyring did not get unlocked" dialog.
+> Since this is a minimal Hyprland setup with no apps that depend on the Secret
+> Service, the fix is simply: `sudo pacman -Rns gnome-keyring`. It's an optional
+> dep of git, github-cli, google-chrome, libsecret and VS Code — those fall back
+> to a plaintext/basic store (Chrome) or re-prompt for sign-in (VS Code sync) if
+> you use them. Reinstall + add `pam_gnome_keyring.so` to `/etc/pam.d/login`
+> (auth `optional`, session `optional auto_start`) if you ever need real keyring.
+
+> **Debloating the leftover GNOME desktop.** If you migrated from GNOME, the full
+> desktop is still installed and does nothing on a getty + Hyprland box. Removed:
+> `gdm gnome-shell mutter gnome-session gnome-settings-daemon gnome-control-center`
+> `xdg-desktop-portal-gnome` (redundant — Hyprland + GTK portals already run, and
+> the GNOME one can conflict) `gnome-shell-extension-dash-to-panel gnome-tour`
+> `gnome-software gnome-user-docs gnome-backgrounds gnome-remote-desktop`
+> `gnome-user-share gnome-color-manager gnome-menus` plus most apps (`nautilus`,
+> calculator, text-editor, maps, music, weather, clocks, contacts, calendar, etc.).
+> **Kept:** `gnome-system-monitor`, `gnome-disk-utility`.
+>
+> **Before a big `pacman -Rns` of the GNOME stack, dry-run it** (`pacman -Rsp …`)
+> and mark genuinely-wanted packages explicit (`pacman -D --asexplicit <pkg>`) so
+> the cascade doesn't orphan-remove them. On this box that rescued: `pipewire-pulse`
+> (PulseAudio shim — audio dies without it), `noto-fonts-emoji`, `webkit2gtk-4.1`
+> (webview/Tauri apps — see the fractional-scale gotcha below), `unzip`,
+> `python-argcomplete`. `pacman -Qdtq` lists orphans to review afterward.
+
+> **xremap: use the build that matches the compositor.** This box had
+> `xremap-gnome-bin` left from GNOME; on Hyprland that's `xremap-hypr-bin` (both
+> install `/usr/bin/xremap`, so the user `xremap.service` unit is unchanged — just
+> swap the package and `systemctl --user restart xremap.service`). The wrong build
+> only loses per-application remapping; device-level remaps work either way.
+
+`bluez`/`bluez-utils` power the waybar `bluetooth` module. Enable the daemon:
+
+```bash
+sudo systemctl enable --now bluetooth
+```
+
+The bar's bluetooth click opens `bluetui` (AUR), a keyboard-driven TUI for
+scanning/pairing/connecting — no commands to memorize:
+
+```bash
+yay -S --needed bluetui
 ```
 
 `tofi` is AUR-only:
@@ -135,7 +184,7 @@ What each file is:
 | `hypr/hypridle.conf` | lock after 5 min, screen off after 10 min (hyprlang format) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
-| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/net/cpu/mem · tray |
+| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem · tray (bt click → `bluetui` TUI in foot) |
 | `waybar/style.css` | flat solid-black bar |
 | `dunst/dunstrc` | black notifications |
 | `tofi/config` | centered vertical launcher, white-bar selection |
@@ -151,24 +200,98 @@ What each file is:
 
 ---
 
-## Step 4 — Text greeter (greetd + tuigreet)
+## Step 4 — Login (plain getty, manual Hyprland start)
 
-Copy the config (needs root):
+This setup uses **no display manager**. You log in at the normal Arch text
+console (`getty` on tty1) and land at a plain shell. Hyprland is **not**
+auto-started — you launch it by hand when you want the desktop. This is the
+simplest, most robust path, and it sidesteps a nasty NVIDIA multi-monitor
+console bug that breaks graphical/TUI greeters (see Step 6).
+
+**a) Ensure `getty@tty1` is enabled** (it is by default on Arch):
 
 ```bash
-sudo cp configs/greetd/config.toml /etc/greetd/config.toml
+sudo systemctl enable getty@tty1.service
 ```
 
-It launches `tuigreet` defaulting to Hyprland, with other sessions selectable
-(press **F3**):
+**b) Start Hyprland manually.** After logging in, run:
 
-```toml
-[terminal]
-vt = 1
-[default_session]
-command = "tuigreet --remember --remember-session --time --sessions /usr/share/wayland-sessions --cmd start-hyprland"
-user = "greeter"
+```sh
+start-hyprland
 ```
+
+Exit with **SUPER + M**, which drops you straight back to the tty1 shell.
+
+Make sure your login shell profile (`~/.zprofile` for zsh, `~/.bash_profile`
+for bash) does **not** auto-exec Hyprland. The intended note in `~/.zprofile`:
+
+```sh
+# Hyprland is NOT auto-started. Login lands at a plain tty1 shell; start the
+# desktop manually with:
+#     start-hyprland
+# `start-hyprland` is the official session wrapper (systemd/dbus user session,
+# env import, portals) — bare `Hyprland` warns it's unsupported. Run it WITHOUT
+# `exec` so that exiting Hyprland (SUPER + M) returns to this same tty1 shell
+# instead of logging out.
+```
+
+> **Want auto-start back?** Append this guard to `~/.zprofile` to launch
+> Hyprland automatically on tty1 login (drop `exec` if you'd rather return to
+> the same shell on exit instead of logging out):
+>
+> ```sh
+> if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+>   exec start-hyprland
+> fi
+> ```
+
+> **Run `start-hyprland` without `exec`.** A bare `start-hyprland` keeps the
+> login shell alive underneath, so SUPER + M returns to that tty1 prompt. Using
+> `exec start-hyprland` would replace the shell and log you out on exit instead.
+
+> **Use `start-hyprland`, not bare `Hyprland`.** The `/usr/bin/start-hyprland`
+> wrapper (what `hyprland.desktop` itself execs) sets up the session properly;
+> launching the raw `Hyprland` binary triggers a *"started without
+> start-hyprland… highly not recommended"* warning. Either way, do **not**
+> `sudo` it.
+
+> **Why not greetd/tuigreet?** A `configs/greetd/` config is kept in the repo as
+> an alternative, but it's **not used by default**: on mismatched dual monitors
+> the NVIDIA text-console clone bug (Step 6) leaves the greeter zoomed/cropped,
+> and the workaround (`fbdev=0`) black-screened this hardware entirely. A plain
+> `getty` is readable and reliable; Hyprland fixes the displays once it starts.
+
+**c) Hyprland raises the systemd graphical session itself.** A display manager
+normally starts `graphical-session.target` on login — a plain `getty` does
+**not**. Any user service bound to that target (`xremap`, `hyprpolkitagent`,
+the gvfs / `xdg-desktop-portal` services, anything `WantedBy=graphical-session.target`)
+would then silently never start. So `hyprland.lua` does it on the
+`hyprland.start` event (and tears it down on `hyprland.shutdown`):
+
+```lua
+hl.on("hyprland.start", function()
+  hl.exec_cmd(
+    "systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP "
+    .. "&& dbus-update-activation-environment --systemd WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP "
+    .. "&& systemctl --user start hyprland-session.target"
+  )
+  -- …rest of autostart…
+end)
+
+hl.on("hyprland.shutdown", function()
+  hl.exec_cmd("systemctl --user stop hyprland-session.target")
+end)
+```
+
+Importing the env **before** starting the target is what lets those services
+inherit `WAYLAND_DISPLAY`. `hyprland-session.target` `BindsTo`
+`graphical-session.target`, so starting it pulls the whole session up.
+
+> **Symptom if this is missing:** `xremap` (and the polkit agent, portals, etc.)
+> just don't run, even though Hyprland is up. Check with
+> `systemctl --user is-active graphical-session.target` — if it's `inactive`
+> while Hyprland runs, this bootstrap didn't fire. This is the one thing a
+> display manager did for free that the bare `getty` path must do explicitly.
 
 ---
 
@@ -189,10 +312,10 @@ This forces a plain white-on-black text menu (overrides any theme/gfxmode).
 
 ---
 
-## Step 6 — Console font (greeter size)
+## Step 6 — Console font (login size)
 
 On a HiDPI/4K panel the default console font is microscopic, which makes the
-greeter look tiny. Set a big bitmap font (`configs/system/vconsole.conf`):
+text login look tiny. Set a big bitmap font (`configs/system/vconsole.conf`):
 
 ```bash
 sudo cp configs/system/vconsole.conf /etc/vconsole.conf   # FONT=ter-132b
@@ -201,66 +324,65 @@ sudo cp configs/system/vconsole.conf /etc/vconsole.conf   # FONT=ter-132b
 On a 1080p screen, `ter-116b`/`ter-118b` is plenty. Applied at boot by
 `systemd-vconsole-setup`; to apply now: `sudo setfont ter-132b`.
 
-> **Gotcha (NVIDIA + multi-monitor): greeter is zoomed into the top-left
-> quarter on BOTH screens / shutdown text cropped.** Symptom: the same greeter
-> appears mirrored on both monitors, zoomed in, showing only the top-left
-> chunk. Confirm with `cat /sys/class/graphics/fb0/virtual_size` (4K) vs
-> `/sys/class/graphics/fb0/modes` (1080p) — a 4K console *canvas* scanned out at
-> 1080p.
-> **Cause:** with `nvidia_drm.fbdev=1` (the default since driver 570), NVIDIA
-> drives the text console and **clones it to every monitor**. If your monitors
-> are different models (here an MSI 4K + an LG 4K with different EDID timings),
-> the only mode NVIDIA is certain both share is **1920×1080@60**, so it scans
-> that out while still sizing the canvas to the 4K preferred mode → a 4K grid
-> shown through a 1080p window, which each panel upscales.
-> **Fix:** take NVIDIA out of the console path so the single-head firmware
-> framebuffer (`simpledrm`) owns it — no clone, no panning. In
-> `/etc/modprobe.d/nvidia.conf`:
-> ```
-> options nvidia_drm modeset=1 fbdev=0
-> ```
-> Keep `GRUB_GFXPAYLOAD_LINUX=keep` so `simpledrm` has a real framebuffer, then
-> rebuild and reboot:
-> ```bash
-> sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg
-> ```
-> The greeter then appears on one monitor (the firmware's primary), centered.
-> Trade-offs: the second monitor is blank at the greeter, and because NVIDIA no
-> longer manages the console, the TTY may be black if you *exit* a Hyprland
-> session back to the greeter without rebooting (a full reboot/shutdown is
-> fine). NVIDIA's own `video=CONNECTOR:MODE` and `GFXPAYLOAD` levers do **not**
-> fix this — it's the clone-mode selection, not the handoff.
-> (Single-model identical monitors usually clone fine at native and don't hit
-> this — keep the default `fbdev=1` in that case.)
+> **Gotcha (NVIDIA + mismatched dual monitors): the text console is zoomed into
+> the top-left quarter on BOTH screens.** This hits *every* text console — the
+> GRUB menu, the `getty` login, and shutdown messages. Symptom: the same content
+> is mirrored on both monitors, zoomed, showing only the top-left chunk. Confirm
+> with `cat /sys/class/graphics/fb0/virtual_size` (e.g. `3840,2160`) vs
+> `/sys/class/graphics/fb0/modes` (e.g. `1920x1080`) — a 4K console *canvas*
+> scanned out at 1080p.
+> **Cause:** with `nvidia_drm.fbdev=1` (default since driver 570), NVIDIA drives
+> the text console and **clones it to every monitor**. If the monitors are
+> different models (here an MSI MAG322UPF + an LG ULTRAFINE, different EDID
+> timings), the only mode NVIDIA trusts on both is **1920×1080@60**, so it scans
+> that out while sizing the canvas to the 4K preferred mode → a 4K grid shown
+> through a 1080p window, which each panel upscales.
+> **Status: NOT solved — and don't burn time chasing it.** None of these helped:
+> `video=CONNECTOR:MODE` (NVIDIA's kernel modules ignore it),
+> `GRUB_GFXPAYLOAD_LINUX=text`, or kernel cmdline mode pins. **Do NOT set
+> `nvidia_drm.fbdev=0`** to hand the console to `simpledrm`: on this hardware it
+> produced a fully **black console / soft-lock after GRUB**, not a centered one.
+> **What we do instead:** stop caring how the text console *looks*. The login is
+> a plain `getty` (Step 4) — the prompt is legible in that top-left region (the
+> big console font above helps), you log in, and **Hyprland drives both monitors
+> correctly at native 4K**. The bug is specific to the *kernel text console*;
+> a real Wayland compositor sets proper per-monitor modes and is unaffected.
+> (Single-model identical monitors usually clone fine and won't hit this — there
+> you could keep a graphical greeter.)
 
 ---
 
-## Step 7 — Switch the display manager
+## Step 7 — Disable any display manager
+
+This setup has **no** display manager (login is the plain `getty` from Step 4).
+Migrating from GNOME/etc.? Disable the old DM so it doesn't grab the VT:
 
 > **Don't use `--now`** — that kills your current GNOME/X session. Plain
-> enable/disable takes effect on the **next reboot**, keeping your current
-> session safe.
+> disable takes effect on the **next reboot**, keeping your current session safe.
 
 ```bash
-sudo systemctl disable gdm      # or sddm / lightdm
-sudo systemctl enable greetd
+sudo systemctl disable gdm      # or sddm / lightdm / greetd
+# getty@tty1 (Step 4) then provides the text login
 ```
 
-Reboot when ready. **Recovery:** if Hyprland/greetd misbehaves, switch to a TTY
-(`Ctrl+Alt+F2`), log in, and run
-`sudo systemctl disable greetd && sudo systemctl enable gdm && sudo reboot`.
+If a DM was set as the `display-manager.service` alias, disabling it also clears
+that symlink. Reboot when ready. **Recovery:** Hyprland never auto-starts, so a
+broken `hyprland.lua` can't lock you out — login always lands at a plain shell.
+Fix the config and re-run `start-hyprland`, or `sudo systemctl enable gdm` to
+fall back to a display manager.
 
 ---
 
 ## Step 8 — First launch & keybinds
 
-Default session command is `start-hyprland` (do **not** `sudo` it). Mod = `SUPER`.
+Log in at tty1, then start the desktop manually with `start-hyprland` (do
+**not** `sudo` it). `SUPER + M` exits back to the tty. Mod = `SUPER`.
 
 | Keys | Action |
 | --- | --- |
-| `SUPER + Q` | terminal (foot) |
+| `SUPER + C` | terminal (foot / console) |
 | `SUPER + R` or `SUPER + Space` | launcher (tofi; latter is macOS Cmd+Space muscle memory) |
-| `SUPER + C` | close window |
+| `SUPER + Q` | close window (macOS Cmd+Q quit) |
 | `SUPER + M` | exit Hyprland |
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |
@@ -292,6 +414,32 @@ If the config has an error, Hyprland still boots with emergency binds
 
 Live-test a scale without rebooting: edit `hyprland.lua`, `SUPER+SHIFT+R`
 (or `hyprctl reload`).
+
+---
+
+## Dark theme for GTK apps & Chrome
+
+No GUI settings app is installed, so set the dark preference with `gsettings`
+(it persists in `~/.config/dconf/user` across reboots):
+
+```bash
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'   # GTK4/libadwaita + the xdg portal
+gsettings set org.gnome.desktop.interface gtk-theme    'Adwaita-dark'  # GTK3 apps (e.g. gnome-system-monitor)
+```
+
+- `color-scheme=prefer-dark` is what the **xdg-desktop-portal** reports to apps
+  that ask (Chrome's "system" theme, GTK4/libadwaita apps).
+- **GTK3** apps don't read `color-scheme`; they follow the theme *name*, so
+  `gtk-theme` must be a dark theme (`Adwaita-dark` is built into GTK3 — no
+  package needed). Without this, GTK3 windows stay light even with prefer-dark.
+- Already-open apps don't switch live — relaunch them.
+
+> **If Chrome ignores it:** the portal only runs once `graphical-session.target`
+> is up (Step 4c). If that target isn't active, Chrome can't read the preference
+> and falls back to light — so a missing session bootstrap shows up as "Chrome
+> went light after reboot." Verify with:
+> `dbus-send --session --print-reply --dest=org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop org.freedesktop.portal.Settings.Read string:'org.freedesktop.appearance' string:'color-scheme'`
+> → `uint32 1` means prefer-dark.
 
 ---
 
@@ -329,8 +477,12 @@ hl.config({ xwayland = { force_zero_scaling = true } })
 
 - Config is **Lua** (`hyprland.lua`), not hyprlang — ignore old tutorials.
 - `hypridle.conf` / `hyprlock.conf` are still **hyprlang** `.conf` format.
-- Launch with **`start-hyprland`**, never as root.
+- Launch Hyprland manually with `start-hyprland` from the tty1 shell, never as root.
 - Monitor positions are **logical** pixels (after scale).
-- Switch DMs **without `--now`**; keep a TTY recovery path.
+- **No display manager, no autostart** — `getty` login → plain shell → manual `start-hyprland`; `SUPER + M` returns to the tty.
+- **No DM means `hyprland.lua` must start `graphical-session.target` itself** (Step 4c) — otherwise `xremap` / polkit / portals never run even though Hyprland is up.
 - NVIDIA 50xx **requires** the open kernel modules.
+- NVIDIA + mismatched dual monitors → the **text console** (GRUB/login/shutdown)
+  is zoomed top-left; unsolved, and **don't** use `fbdev=0` (it black-screens).
+  Hyprland itself renders both monitors fine.
 - GTK3/webview apps + fractional scale = blur; see the section above.

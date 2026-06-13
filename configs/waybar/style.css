@@ -30,6 +30,7 @@ window#waybar {
 
 #clock,
 #pulseaudio,
+#bluetooth,
 #network,
 #cpu,
 #memory,
@@ -42,6 +43,8 @@ window#waybar {
 #clock { color: #ffffff; }
 #network.disconnected { color: #cc6666; }
 #pulseaudio.muted { color: #666666; }
+#bluetooth.off,
+#bluetooth.disabled { color: #666666; }
 
 tooltip {
   background: #000000;
