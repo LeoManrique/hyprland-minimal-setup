@@ -27,7 +27,7 @@ hl.env("XCURSOR_SIZE", "24")
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1.25 })
 -- Physical layout: DP-2 on the LEFT, DP-1 on the RIGHT (each 3072px wide @ scale 1.25).
 hl.monitor({ output = "DP-2", mode = "preferred", position = "0x0", scale = 1.25 })
-hl.monitor({ output = "DP-1", mode = "3840x2160@160", position = "3072x0", scale = 1.25 })
+hl.monitor({ output = "DP-1", mode = "3840x2160@120", position = "3072x0", scale = 1.25 })
 
 --------------------------------------------------------------------------------
 -- LOOK & FEEL  (minimal / flat / black)

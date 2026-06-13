@@ -28,6 +28,15 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
+- **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off
+  @10min, `suspend-then-hibernate` @30min. NVIDIA needs its sleep services +
+  `NVreg_PreserveVideoMemoryAllocations=1` or it corrupts on resume; swap must be
+  ≥ the kernel hibernation image. See SETUP.md "Idle, lock & hibernate".
+
+- **High refresh vs 4K OBS recording**: 4K@160 + high-fps OBS recording dropped
+  ~84% of frames; capping the monitor to 120 Hz and OBS to 60 fps fixed it. A
+  per-hardware tuning note (not a fixed rule) — see SETUP.md "Monitors & scaling".
+
 - **External A/V**: iPhone-as-webcam over USB via a **self-built MJPEG app**
   (`usbmuxd`/`iproxy` + `v4l2loopback`; no native Continuity Camera on Linux, and
   DroidCam/Iriun were rejected) and the DJI Mic Mini 2 receiver — both documented

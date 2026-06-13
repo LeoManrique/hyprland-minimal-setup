@@ -192,7 +192,7 @@ What each file is:
 | --- | --- |
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
-| `hypr/hypridle.conf` | lock after 5 min, screen off after 10 min (hyprlang format) |
+| `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @30min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
 | `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem (Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`) · tray. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Both pinned top-right via window rules |
@@ -210,6 +210,60 @@ What each file is:
 - **Keyboard:** `input = { kb_layout = "us" }` — change if not US.
 - **Focus:** `input = { follow_mouse = 0 }` — focus changes only on click, not on
   hover. Set back to `1` for classic focus-follows-mouse.
+
+---
+
+## Idle, lock & hibernate
+
+`hypridle` (autostarted from `hyprland.lua`) drives an escalating idle ladder.
+Edit `hypr/hypridle.conf`, then deploy + restart:
+
+```bash
+cp configs/hypr/hypridle.conf ~/.config/hypr/ && pkill -x hypridle; setsid hypridle &
+```
+
+| Idle | Action | Listener |
+| --- | --- | --- |
+| 5 min | lock screen | `loginctl lock-session` |
+| 10 min | monitors off (DPMS) | `hyprctl dispatch dpms off` |
+| 60 min | suspend (→ hibernate @120min) | `systemctl suspend-then-hibernate` |
+
+**`suspend-then-hibernate`** suspends to RAM first (instant wake if you return
+soon), then after a delay wakes briefly and hibernates to disk for a full
+power-off. The delay lives in a systemd drop-in (the default estimate is
+battery-based and never fires on a desktop, so it must be set explicitly):
+
+```bash
+sudo install -Dm644 configs/system/sleep.conf.d-hibernate.conf \
+     /etc/systemd/sleep.conf.d/10-hibernate.conf      # HibernateDelaySec=60min
+```
+
+**Hibernate prerequisites** (all already true on this box — verify on a new one):
+
+- **Swap ≥ hibernation image.** Hibernate writes RAM to swap. Kernel
+  `image_size` (`cat /sys/power/image_size`, ~26.8 G here) must fit in swap
+  (32 G partition). If swap is smaller than that, logind refuses to hibernate —
+  enlarge swap.
+- **`resume=` on the kernel cmdline** pointing at the swap partition's UUID
+  (`resume=UUID=…` — already in `configs/system/grub.snippet` / GRUB cmdline).
+- **`systemd` initrd hook** in `/etc/mkinitcpio.conf` `HOOKS` — it handles
+  resume automatically (no separate `resume` hook needed with the systemd init).
+- **NVIDIA only:** suspend/hibernate corrupt the GPU on resume unless you enable
+  the driver's power-management services and preserve VRAM:
+  ```bash
+  sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+  echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' | \
+      sudo tee /etc/modprobe.d/nvidia-power.conf
+  sudo mkinitcpio -P     # rebuild initramfs after the modprobe change
+  ```
+
+Verify the system will accept it before trusting the timer:
+
+```bash
+busctl call org.freedesktop.login1 /org/freedesktop/login1 \
+    org.freedesktop.login1.Manager CanSuspendThenHibernate   # expect: s "yes"
+sudo systemctl suspend-then-hibernate                        # test manually once
+```
 
 ---
 
@@ -428,6 +482,15 @@ If the config has an error, Hyprland still boots with emergency binds
 
 Live-test a scale without rebooting: edit `hyprland.lua`, `SUPER+SHIFT+R`
 (or `hyprctl reload`).
+
+> **Limitation (high refresh + 4K OBS recording):** with the MSI panel at
+> `3840x2160@160` and OBS recording 4K at a high fps (e.g. 80), recordings
+> dropped almost all frames (encoding lag ~84%, render lag ~38%) and the
+> desktop hitched under heavy tiling. Pinning the monitor to `3840x2160@120`
+> **and** the OBS output to 60 fps cleared it up completely. This is a
+> per-hardware balancing act, not a rule — match the monitor mode and OBS fps
+> to what your GPU/encoder (here an RTX 5060 Ti / NVENC) can actually sustain;
+> the exact numbers will differ on other displays/GPUs.
 
 ---
 
