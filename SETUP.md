@@ -192,6 +192,7 @@ What each file is:
 | --- | --- |
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
+| `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @30min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
@@ -457,6 +458,7 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + L` or `SUPER + CTRL + Q` | lock now (hyprlock; latter is macOS-style) |
 | `SUPER + E` | color picker (hyprpicker) |
 | `SUPER + .` | clipboard history (cliphist via fuzzel --dmenu) |
+| `SUPER + Escape` | power menu (lock/logout/suspend/hibernate/reboot/shutdown via fuzzel --dmenu) |
 | `SUPER + arrows` | move focus |
 | `SUPER + CONTROL + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |

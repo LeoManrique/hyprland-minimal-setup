@@ -147,6 +147,9 @@ hl.bind(mod .. " + E", hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick
 -- Clipboard history picker (via fuzzel --dmenu)
 hl.bind(mod .. " + period", hl.dsp.exec_cmd("cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"))
 
+-- Power menu (lock/logout/suspend/hibernate/reboot/shutdown via fuzzel --dmenu)
+hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("~/.config/hypr/scripts/power-menu"))
+
 -- Move focus
 hl.bind(mod .. " + Left",  hl.dsp.focus({ direction = "l" }))
 hl.bind(mod .. " + Right", hl.dsp.focus({ direction = "r" }))

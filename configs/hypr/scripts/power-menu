@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# power-menu — pick a power action via fuzzel, in two stages:
+#   1. choose the action (lock / logout / suspend / hibernate / reboot / shutdown)
+#   2. confirm (irreversible actions only) so a stray Enter can't shut you down
+# Bound to SUPER + Escape. No extra deps: systemctl/loginctl/hyprctl + fuzzel.
+# Commands mirror the rest of the config: lock via loginctl (hypridle uses the
+# same), logout via hyprctl exit (fires the shutdown hook that stops
+# hyprland-session.target), suspend-then-hibernate matching the idle ladder.
+set -euo pipefail
+
+# Centered like the SUPER+R launcher (no --anchor, unlike audio-picker).
+pick() { fuzzel --dmenu --prompt "$1" --lines "${2:-8}" --width 20; }
+
+# Stage 1 — action. Glyphs are Nerd Font (JetBrainsMono, as in fuzzel.ini).
+choice=$(printf '%s\n' \
+  "  Lock" \
+  "  Logout" \
+  "  Suspend" \
+  "  Hibernate" \
+  "  Reboot" \
+  "  Shutdown" | pick "power: " 6)
+[ -z "$choice" ] && exit 0
+
+# Stage 2 — confirm the irreversible ones.
+confirm() {
+  [ "$(printf '%s\n%s\n' "No" "Yes" | pick "$1? " 2)" = "Yes" ]
+}
+
+case "$choice" in
+  *Lock)      loginctl lock-session ;;
+  *Logout)    confirm "log out"  && hyprctl dispatch exit ;;
+  *Suspend)   systemctl suspend ;;
+  *Hibernate) systemctl hibernate ;;
+  *Reboot)    confirm "reboot"   && systemctl reboot ;;
+  *Shutdown)  confirm "shut down" && systemctl poweroff ;;
+esac
