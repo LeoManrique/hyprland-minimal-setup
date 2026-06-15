@@ -29,7 +29,10 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
 - **App dock**: an always-visible bottom-center dock (`nwg-dock-hyprland`, AUR) with
-  pinned + running apps, real Papirus icons, and click-to-focus/launch. Themed
+  pinned + running apps, real Papirus icons (rendered at `GDK_SCALE=2` so they
+  stay crisp on the 1.25-scaled monitor), and click-to-focus/launch. GTK widget
+  theme is **adw-gtk3-dark** so the right-click context menu (and all GTK apps)
+  render dark. Themed
   minimal: transparent (icons-only, no panel) with a single cyan accent
   (`#33ccff`, matching the active-window border) for hover + running indicators,
   pinned to the main monitor (`-o DP-1`) so it doesn't hop between screens.

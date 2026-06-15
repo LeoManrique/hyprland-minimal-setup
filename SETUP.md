@@ -62,7 +62,7 @@ skips anything you already have.
 
 ```bash
 sudo pacman -Syu --needed \
-  hyprland foot waybar dunst fuzzel papirus-icon-theme \
+  hyprland foot waybar dunst fuzzel papirus-icon-theme adw-gtk-theme \
   hypridle hyprlock hyprpicker hyprpolkitagent \
   xdg-desktop-portal-hyprland qt5-wayland qt6-wayland \
   ttf-jetbrains-mono-nerd grim slurp cliphist wl-clipboard brightnessctl \
@@ -152,7 +152,25 @@ focused output and hops between screens. (Swap `DP-1` for your primary output;
 **running** apps, each with a cyan indicator under running ones; clicking focuses
 the app (cycling its windows) or launches it. Real app icons come from the GTK
 icon theme, which is why `gtk-3.0/settings.ini` sets **Papirus-Dark** (without it
-GTK falls back to Adwaita and most icons go blank). **`-x` reserves an exclusive
+GTK falls back to Adwaita and most icons go blank). The same file sets the GTK
+**widget** theme to **`adw-gtk3-dark`** (`pacman -S adw-gtk-theme`) so the dock's
+right-click context menu (and all GTK apps) render dark instead of light —
+`gtk-application-prefer-dark-theme` alone didn't darken the popup menu. For
+GTK4/libadwaita apps, also set it via gsettings:
+
+```bash
+gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark
+gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
+```
+
+The dock is launched with **`env GDK_SCALE=2`**. nwg-dock is GTK3, which has no
+fractional-scaling support; on this 1.25-scaled monitor it would render its
+surface at 1x and let Hyprland **upscale** it, leaving the icons soft/blurry.
+Forcing `GDK_SCALE=2` makes GTK render at integer 2x so the compositor
+**downscales** 2x → 1.25 instead — crisp icons. Because everything is then in 2x
+logical pixels, the icon size is set with **`-i 44`** to land at the right visual
+size (raise/lower `-i` to taste). **`-x` reserves an exclusive
 zone**, so windows tile above the dock and leave a clean strip at the bottom
 rather than the dock floating over them; drop `-x` if you'd prefer it to overlay
 windows instead.
@@ -171,7 +189,7 @@ cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/style.css
 # NB: kill by the truncated comm name, NOT `pkill -f nwg-dock-hyprland` — the
 # -f form also matches your own shell's command line and kills the terminal.
 pkill nwg-dock-hyprla
-setsid nwg-dock-hyprland -r -i 40 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher &
+setsid env GDK_SCALE=2 nwg-dock-hyprland -r -i 44 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher &
 ```
 
 Two intentional limits: **no icon magnification** (GTK3 CSS has no
@@ -340,7 +358,7 @@ What each file is:
 | `waybar/style.css` | flat solid-black bar |
 | `nwg-dock-hyprland/pinned` | dock's pinned apps — one **window class** per line (`foot`, `google-chrome`, `code`, `dev.zed.Zed`); deployed to `~/.cache/nwg-dock-pinned` (see [App dock](#app-dock)) |
 | `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |
-| `gtk-3.0/settings.ini` | GTK icon theme = Papirus-Dark (so the dock & GTK apps get real app icons) |
+| `gtk-3.0/settings.ini` | GTK theme = **adw-gtk3-dark** (`adw-gtk-theme`, extra repo) for dark widgets/menus, icon theme = Papirus-Dark (real app icons). Also run `gsettings set org.gnome.desktop.interface color-scheme prefer-dark` + `gtk-theme adw-gtk3-dark` so GTK4/libadwaita apps follow (see [App dock](#app-dock)) |
 | `dunst/dunstrc` | black notifications |
 | `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark) |
 
