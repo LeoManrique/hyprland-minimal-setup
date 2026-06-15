@@ -47,7 +47,9 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   N)` → syntax error). Rebuilt as ten `custom/ws1..ws10` modules that dispatch the
   correct `hl.dsp.focus({...})` form, with one bar per monitor so each shows only
   its own output's workspaces, and a tiny Python event listener refreshing the
-  highlight (no `jq`/`socat`). See SETUP.md "Clickable workspace tags".
+  highlight (no `jq`/`socat`). Left-click focuses; **right-click renames** the
+  workspace (fuzzel prompt → shows as `<id>:<name>`, persisted across reboots).
+  See SETUP.md "Clickable workspace tags".
 
 - **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off
   @10min, `suspend-then-hibernate` @60min. NVIDIA needs its sleep services +

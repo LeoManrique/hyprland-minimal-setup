@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Rename workspace <id>: prompt for a label via fuzzel, persist it, refresh waybar.
+# Usage: ws-rename <workspace-id>   (wired to each custom/wsN on-click-right)
+#
+# Labels are global per workspace id — both per-monitor bars read the same store —
+# and persist across reboots. Store format: one "<id><TAB><name>" line per named
+# workspace. Empty input clears the name; Esc/cancel keeps the current one. The
+# matching reader is ws-state (it turns "<id>" into "<id>:<name>" in the bar).
+#
+# fuzzel's --prompt-only makes it a pure text-input box (no stdin list); it prints
+# the typed text on Enter and exits non-zero on cancel. --search prefills it with
+# the current name so renames edit in place.
+id="$1"
+store="${XDG_STATE_HOME:-$HOME/.local/state}/waybar/ws-names"
+mkdir -p "$(dirname "$store")"; [ -f "$store" ] || : > "$store"
+
+current=$(awk -F'\t' -v id="$id" '$1 == id { print $2; exit }' "$store")
+
+name=$(fuzzel --dmenu --prompt-only="ws $id: " --search="$current") || exit 0
+name=${name//$'\t'/ }   # tab is the field separator — never store a literal tab
+
+# Rewrite the store without this id, then re-add it only if a name was given.
+tmp=$(mktemp)
+awk -F'\t' -v id="$id" '$1 != id' "$store" > "$tmp"
+[ -n "$name" ] && printf '%s\t%s\n' "$id" "$name" >> "$tmp"
+mv "$tmp" "$store"
+
+# Same signal waybar-ws-listener uses (matches "signal":1 in config.jsonc).
+pkill -RTMIN+1 waybar

@@ -253,7 +253,15 @@ Two scripts back this (both pure Python/bash + `hyprctl` — **no `jq`/`socat`**
   monitor: `ws-active` (the workspace visible on `<monitor>` now), `ws-occupied`
   (a workspace that lives on `<monitor>` but isn't visible), or `ws-empty`
   (anything else — collapsed to zero width in CSS, so each bar shows only the
-  workspaces on its own monitor).
+  workspaces on its own monitor). If the workspace has a user label it shows as
+  `<id>:<name>`, otherwise just `<id>`.
+- **`hypr/scripts/ws-rename <id>`** — wired to each tag's `on-click-right`.
+  Right-clicking a tag pops a `fuzzel` text box (`--prompt-only`, prefilled with
+  the current name) to label that workspace; empty input clears it. Labels are
+  global per workspace id (both bars read the same store), persist across reboots
+  in `${XDG_STATE_HOME:-~/.local/state}/waybar/ws-names` (`<id><TAB><name>` per
+  line), and the script signals waybar to refresh. **Only visible tags are
+  clickable** (empty ones are zero-width) — switch to a workspace before naming it.
 - **`hypr/scripts/waybar-ws-listener`** — tails Hyprland's event socket
   (`.socket2.sock`) and runs `pkill -RTMIN+1 waybar` on any workspace/monitor
   change. Every `custom/wsN` listens on `"signal": 1`, so one signal refreshes
@@ -267,7 +275,7 @@ restart, not just `SIGUSR2`):
 
 ```bash
 cp configs/waybar/*            ~/.config/waybar/   # includes shared.jsonc
-cp configs/hypr/scripts/ws-state configs/hypr/scripts/waybar-ws-listener ~/.config/hypr/scripts/
+cp configs/hypr/scripts/ws-state configs/hypr/scripts/ws-rename configs/hypr/scripts/waybar-ws-listener ~/.config/hypr/scripts/
 pkill -x waybar; setsid waybar >/dev/null 2>&1 &  # restart bar + re-read config
 # restart the listener (only auto-starts at login). Do NOT `pkill -f
 # waybar-ws-listener` — the -f form also matches your own shell's command line.
@@ -348,7 +356,8 @@ What each file is:
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
-| `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor — see [Clickable workspace tags](#clickable-workspace-tags) |
+| `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>:<name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
+| `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change (Python, no deps) — autostarted from `hyprland.lua` |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |

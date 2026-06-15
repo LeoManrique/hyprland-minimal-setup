@@ -13,33 +13,39 @@
 // sends `dispatch workspace N`, which the Lua config rejects as a syntax error.
 // `waybar-ws-listener` (autostarted from hyprland.lua) signals SIGRTMIN+1 to
 // refresh every tag on any workspace/monitor change.
+//
+// left-click  -> focus the workspace.
+// right-click -> rename it (ws-rename pops a fuzzel text box; the label shows as
+//                "<id>:<name>" and persists). Only visible (active/occupied) tags
+//                are clickable — empty ones are zero-width — so switch to a
+//                workspace first if you want to name it.
 [
   {
     "include": ["~/.config/waybar/shared.jsonc"],
     "output": "DP-1",
-    "custom/ws1":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 1",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\" })'" },
-    "custom/ws2":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 2",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\" })'" },
-    "custom/ws3":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 3",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'" },
-    "custom/ws4":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 4",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\" })'" },
-    "custom/ws5":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 5",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\" })'" },
-    "custom/ws6":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 6",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\" })'" },
-    "custom/ws7":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 7",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\" })'" },
-    "custom/ws8":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 8",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\" })'" },
-    "custom/ws9":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 9",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\" })'" },
-    "custom/ws10": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 10", "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"10\" })'" }
+    "custom/ws1":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 1",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 1" },
+    "custom/ws2":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 2",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 2" },
+    "custom/ws3":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 3",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 3" },
+    "custom/ws4":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 4",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 4" },
+    "custom/ws5":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 5",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 5" },
+    "custom/ws6":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 6",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 6" },
+    "custom/ws7":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 7",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 7" },
+    "custom/ws8":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 8",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 8" },
+    "custom/ws9":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 9",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 9" },
+    "custom/ws10": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 10", "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"10\" })'", "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 10" }
   },
   {
     "include": ["~/.config/waybar/shared.jsonc"],
     "output": "DP-2",
-    "custom/ws1":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 1",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\" })'" },
-    "custom/ws2":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 2",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\" })'" },
-    "custom/ws3":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 3",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'" },
-    "custom/ws4":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 4",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\" })'" },
-    "custom/ws5":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 5",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\" })'" },
-    "custom/ws6":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 6",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\" })'" },
-    "custom/ws7":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 7",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\" })'" },
-    "custom/ws8":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 8",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\" })'" },
-    "custom/ws9":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 9",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\" })'" },
-    "custom/ws10": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 10", "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"10\" })'" }
+    "custom/ws1":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 1",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 1" },
+    "custom/ws2":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 2",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 2" },
+    "custom/ws3":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 3",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 3" },
+    "custom/ws4":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 4",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 4" },
+    "custom/ws5":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 5",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 5" },
+    "custom/ws6":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 6",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 6" },
+    "custom/ws7":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 7",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 7" },
+    "custom/ws8":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 8",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 8" },
+    "custom/ws9":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 9",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 9" },
+    "custom/ws10": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state DP-2 10", "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"10\" })'", "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 10" }
   }
 ]

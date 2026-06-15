@@ -14,13 +14,22 @@
 mon="$1"
 id="$2"
 
+# Optional user label for this workspace (set via ws-rename, global per id). The
+# bar shows "<id>:<name>" when named, or just "<id>" otherwise. JSON-escape it so
+# a name with " or \ can't break the emitted object.
+store="${XDG_STATE_HOME:-$HOME/.local/state}/waybar/ws-names"
+name=$(awk -F'\t' -v id="$id" '$1 == id { print $2; exit }' "$store" 2>/dev/null)
+label="$id"
+[ -n "$name" ] && label="$id:$name"
+label=$(printf '%s' "$label" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
 # Visible (active) workspace on this monitor.
 mon_active=$(hyprctl monitors | awk -v m="$mon" '
   $1 == "Monitor" { on = ($2 == m) }
   on && $1 == "active" && $2 == "workspace:" { print $3; exit }')
 
 if [ "$id" = "$mon_active" ]; then
-  printf '{"text":"%s","class":["ws","ws-active"]}\n' "$id"
+  printf '{"text":"%s","class":["ws","ws-active"]}\n' "$label"
   exit 0
 fi
 
@@ -30,7 +39,7 @@ ws_mon=$(hyprctl workspaces | awk -v id="$id" '
   $1 == "workspace" && $2 == "ID" && $3 == id { sub(/:$/, "", $NF); print $NF; exit }')
 
 if [ -n "$ws_mon" ] && [ "$ws_mon" = "$mon" ]; then
-  printf '{"text":"%s","class":["ws","ws-occupied"]}\n' "$id"
+  printf '{"text":"%s","class":["ws","ws-occupied"]}\n' "$label"
 else
   printf '{"text":"","class":["ws","ws-empty"]}\n'
 fi
