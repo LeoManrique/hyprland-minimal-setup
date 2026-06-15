@@ -150,6 +150,7 @@ hl.bind(mod .. " + C", hl.dsp.exec_cmd("foot"))                          -- term
 hl.bind(mod .. " + B", hl.dsp.exec_cmd('gtk-launch "$(xdg-settings get default-web-browser)"'))  -- default browser
 hl.bind(mod .. " + R", hl.dsp.exec_cmd("fuzzel"))                        -- launcher (icons via Papirus-Dark)
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("fuzzel"))                    -- launcher (macOS Cmd+Space muscle memory)
+hl.bind("ALT + Space", hl.dsp.exec_cmd("fuzzel"))                        -- launcher (Alt+Space too)
 hl.bind(mod .. " + Q", hl.dsp.window.close())                            -- close window (macOS Cmd+Q quit)
 hl.bind(mod .. " + M", hl.dsp.exit())                                    -- exit Hyprland
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
