@@ -48,6 +48,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   its own output's workspaces, and a tiny Python event listener refreshing the
   highlight (no `jq`/`socat`). Left-click focuses; **right-click renames** the
   workspace (fuzzel prompt → shows as `<id>:<name>`, persisted across reboots).
+  Names clear automatically when a workspace empties out and Hyprland destroys it.
   See SETUP.md "Clickable workspace tags".
 
 - **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off

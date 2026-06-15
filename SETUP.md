@@ -69,6 +69,12 @@ sudo pacman -Syu --needed \
   terminus-font bluez bluez-utils
 ```
 
+> **Terminal/launcher font is SF Mono** (used by `foot` and `fuzzel`). SF Mono
+> is an Apple font, not in the Arch repos — install the `.otf` files manually
+> (e.g. into `~/.local/share/fonts/apple-fonts/` or `/usr/share/fonts/apple-fonts/`)
+> and run `fc-cache -f`. `ttf-jetbrains-mono-nerd` above is still required: SF Mono
+> has no Nerd Font glyphs, so waybar's bar icons fall back to it.
+
 > No display manager / greeter package is needed — login is the plain `getty`
 > text console (Step 4).
 
@@ -261,11 +267,16 @@ Two scripts back this (both pure Python/bash + `hyprctl` — **no `jq`/`socat`**
   in `${XDG_STATE_HOME:-~/.local/state}/waybar/ws-names` (`<id><TAB><name>` per
   line), and the script signals waybar to refresh. **Only visible tags are
   clickable** (empty ones are zero-width) — switch to a workspace before naming it.
+  A name lasts only as long as the workspace does: once it runs out of windows and
+  Hyprland destroys it, the listener (below) drops its store line, so a re-created
+  workspace of the same id comes back unnamed.
 - **`hypr/scripts/waybar-ws-listener`** — tails Hyprland's event socket
   (`.socket2.sock`) and runs `pkill -RTMIN+1 waybar` on any workspace/monitor
   change. Every `custom/wsN` listens on `"signal": 1`, so one signal refreshes
-  them all. Autostarted from `hyprland.lua` (`hl.exec_cmd(...)` in the
-  `hyprland.start` handler).
+  them all. It also watches for `destroyworkspacev2>>id,name` events and removes
+  that id from the `ws-names` store, clearing the label when a workspace empties
+  out. Autostarted from `hyprland.lua` (`hl.exec_cmd(...)` in the `hyprland.start`
+  handler).
 
 Styling is in `waybar/style.css` under `.ws` / `.ws.ws-active` / `.ws.ws-empty`.
 
@@ -357,10 +368,10 @@ What each file is:
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
 | `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>:<name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
-| `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change (Python, no deps) — autostarted from `hyprland.lua` |
+| `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change; also clears a workspace's stored label when it's destroyed (Python, no deps) — autostarted from `hyprland.lua` |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
-| `foot/foot.ini` | black terminal, `size=11` font |
+| `foot/foot.ini` | black terminal, `SF Mono:size=11` font |
 | `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |
 | `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Both pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
@@ -368,7 +379,7 @@ What each file is:
 | `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |
 | `gtk-3.0/settings.ini` | GTK theme = **adw-gtk3-dark** (`adw-gtk-theme`, extra repo) for dark widgets/menus, icon theme = Papirus-Dark (real app icons). Also run `gsettings set org.gnome.desktop.interface color-scheme prefer-dark` + `gtk-theme adw-gtk3-dark` so GTK4/libadwaita apps follow (see [App dock](#app-dock)) |
 | `dunst/dunstrc` | black notifications |
-| `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark) |
+| `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark), `SF Mono:size=13` |
 
 > **hypridle/hyprlock use the old `.conf` (hyprlang) format** — that's correct;
 > only the main Hyprland config moved to Lua. Other `hypr*` tools didn't.
@@ -631,7 +642,7 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + arrows` | move focus |
 | `SUPER + CONTROL + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |
-| `SUPER + SHIFT + 1..0` | move window to workspace |
+| `SUPER + SHIFT + 1..0` or `SUPER + CONTROL + 1..0` | move window to workspace |
 | `SUPER + S` / `SUPER + SHIFT + S` | toggle / move-to scratchpad |
 | `Print` / `SHIFT + Print` | region / full screenshot → clipboard |
 

@@ -8,6 +8,11 @@ this daemon tails Hyprland's event socket (.socket2.sock) and signals waybar
 (SIGRTMIN+1) whenever anything workspace-related happens. Every custom/wsN
 module listens on "signal": 1, so one signal re-runs all of them.
 
+We also clear a workspace's user label (set via ws-rename) when Hyprland destroys
+that workspace — a regular workspace is destroyed once its last window closes and
+it's no longer being viewed, so "ran out of windows" == "got destroyed". This way
+a freshly re-created workspace of the same id comes back unnamed.
+
 Started once from hyprland.lua autostart. No external deps (no socat/jq).
 """
 import os
@@ -17,6 +22,24 @@ import subprocess
 his = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
 xrd = os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())
 path = "%s/hypr/%s/.socket2.sock" % (xrd, his)
+
+# Same store ws-rename writes and ws-state reads: one "<id>\t<name>" line per
+# named workspace. Drop the line for <wsid> so the name doesn't survive the
+# workspace being emptied/destroyed.
+store = "%s/waybar/ws-names" % (
+    os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"))
+
+
+def clear_name(wsid):
+    try:
+        with open(store, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return
+    kept = [ln for ln in lines if ln.split("\t", 1)[0] != wsid]
+    if len(kept) != len(lines):
+        with open(store, "w", encoding="utf-8") as f:
+            f.writelines(kept)
 
 # Event lines look like "workspace>>2", "createworkspacev2>>3,3",
 # "moveworkspace>>2,DP-2", "focusedmon>>DP-1,2", "monitoradded>>DP-3".
@@ -29,6 +52,9 @@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 sock.connect(path)
 with sock.makefile("r", encoding="utf-8", errors="replace") as stream:
     for line in stream:
-        name = line.split(">>", 1)[0]
+        name, _, data = line.rstrip("\n").partition(">>")
+        # destroyworkspacev2>>ID,NAME -> the named workspace just went away.
+        if name == "destroyworkspacev2":
+            clear_name(data.split(",", 1)[0])
         if "workspace" in name or name.startswith(MONITOR_EVENTS):
             subprocess.run(["pkill", "-RTMIN+1", "waybar"])
