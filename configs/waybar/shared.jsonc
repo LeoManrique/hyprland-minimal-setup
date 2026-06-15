@@ -1,0 +1,76 @@
+// ~/.config/waybar/shared.jsonc — bar settings shared by both per-monitor bars.
+// config.jsonc defines one bar per output (so each shows only its own monitor's
+// workspaces) and includes this file for everything common. The per-monitor
+// bits — "output" and the custom/wsN workspace tags — live in config.jsonc.
+{
+  "layer": "top",
+  "position": "top",
+  "height": 26,
+  "spacing": 0,
+
+  "modules-left": [],
+  "modules-center": [
+    "custom/ws1", "custom/ws2", "custom/ws3", "custom/ws4", "custom/ws5",
+    "custom/ws6", "custom/ws7", "custom/ws8", "custom/ws9", "custom/ws10",
+    "hyprland/submap"
+  ],
+  "modules-right": ["pulseaudio", "bluetooth", "network", "cpu", "memory", "tray", "clock"],
+
+  "hyprland/submap": {
+    "format": "[{}]",
+    "tooltip": false
+  },
+
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}",
+    "tooltip-format": "<tt>{calendar}</tt>"
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "headphone": "󰋋",
+      "headset": "󰋎",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "$HOME/.config/hypr/scripts/audio-picker",
+    "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-",
+    "tooltip": false
+  },
+
+  "bluetooth": {
+    "format": "󰂯",
+    "format-disabled": "󰂲",
+    "format-off": "󰂲",
+    "format-connected": "󰂱 {num_connections}",
+    "tooltip-format": "{controller_alias}",
+    "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "pkill -x bluetui || foot --app-id=bluetui -e bluetui"
+  },
+
+  "network": {
+    "format-wifi": "󰖩 {signalStrength}%",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰖪",
+    "tooltip-format": "{ifname} {ipaddr}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}"
+  },
+
+  "cpu": {
+    "format": "󰻠 {usage}%",
+    "interval": 2
+  },
+
+  "memory": {
+    "format": "󰍛 {percentage}%",
+    "interval": 5
+  },
+
+  "tray": {
+    "spacing": 8
+  }
+}

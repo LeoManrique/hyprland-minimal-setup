@@ -12,20 +12,23 @@ window#waybar {
   color: #c5c8c6;
 }
 
-#workspaces button {
+/* Workspace tags (custom/wsN). Native hyprland/workspaces clicks are broken
+   under the Lua config, so these are custom modules. Empty workspaces emit an
+   empty label and collapse to zero width, so only existing ones are shown. */
+.ws {
   padding: 0 8px;
-  color: #666666;
+  color: #888888;
   background: transparent;
 }
 
-#workspaces button.active {
+.ws.ws-active {
   color: #ffffff;
   background: #1a1a1a;
 }
 
-#workspaces button.urgent {
-  color: #000000;
-  background: #cc6666;
+.ws.ws-empty {
+  padding: 0;
+  min-width: 0;
 }
 
 #clock,

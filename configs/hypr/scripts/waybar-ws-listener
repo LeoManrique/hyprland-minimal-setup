@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""Refresh the waybar custom/wsN workspace tags on Hyprland workspace changes.
+
+The native hyprland/workspaces module would normally both render and live-update
+the tags, but its click dispatch is broken under the Lua config (see ws-state).
+We replaced it with custom/wsN modules, so we also need to drive their updates:
+this daemon tails Hyprland's event socket (.socket2.sock) and signals waybar
+(SIGRTMIN+1) whenever anything workspace-related happens. Every custom/wsN
+module listens on "signal": 1, so one signal re-runs all of them.
+
+Started once from hyprland.lua autostart. No external deps (no socat/jq).
+"""
+import os
+import socket
+import subprocess
+
+his = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+xrd = os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())
+path = "%s/hypr/%s/.socket2.sock" % (xrd, his)
+
+# Event lines look like "workspace>>2", "createworkspacev2>>3,3",
+# "moveworkspace>>2,DP-2", "focusedmon>>DP-1,2", "monitoradded>>DP-3".
+# Per-monitor bars care about anything that changes which workspaces live where,
+# so we refresh on every *workspace* event (any event name containing the word)
+# plus monitor focus/add/remove and special-workspace toggles.
+MONITOR_EVENTS = ("focusedmon", "monitoradded", "monitorremoved", "activespecial")
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+sock.connect(path)
+with sock.makefile("r", encoding="utf-8", errors="replace") as stream:
+    for line in stream:
+        name = line.split(">>", 1)[0]
+        if "workspace" in name or name.startswith(MONITOR_EVENTS):
+            subprocess.run(["pkill", "-RTMIN+1", "waybar"])

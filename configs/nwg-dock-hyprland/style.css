@@ -1,0 +1,56 @@
+/* nwg-dock-hyprland — minimal "hacker" theme
+ *
+ * Echoes the rest of the setup deliberately, so the dock reads as part of the
+ * desktop rather than a bolt-on:
+ *   - solid-black desktop          -> translucent near-black pill
+ *   - Tomorrow-Night foreground    -> #c5c8c6 icons/text
+ *   - Hyprland active-border cyan  -> #33ccff, used as the ONE accent
+ *
+ * Restraint is the point: one thin cyan hairline, a subtle cyan hover wash,
+ * a thin cyan underline on running apps. No multi-colour glow, no neon spam.
+ *
+ * GTK3 CSS only: `transition`/`box-shadow` work, `transform: scale` does NOT —
+ * which is why this dock can't do macOS fisheye magnification.
+ */
+
+window {
+	/* no panel: icons float directly on the desktop */
+	background: transparent;
+	border: none;
+	color: #c5c8c6;
+}
+
+#box {
+	padding: 0;
+	margin: 0;
+}
+
+button, image {
+	background: none;
+	border: none;
+	box-shadow: none;
+	color: #c5c8c6;
+	font-family: monospace;                      /* on-theme for any labels/tooltips */
+}
+
+button {
+	padding: 6px;
+	margin: 0 3px;
+	border-radius: 8px;
+	transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* hover: faint cyan wash + 1px inner ring — alive, not loud */
+button:hover {
+	background-color: rgba(51, 204, 255, 0.12);
+	box-shadow: inset 0 0 0 1px rgba(51, 204, 255, 0.35);
+}
+
+button:focus {
+	box-shadow: none;
+}
+
+/* running / active window indicator: thin cyan underline */
+#active {
+	border-bottom: 2px solid #33ccff;
+}

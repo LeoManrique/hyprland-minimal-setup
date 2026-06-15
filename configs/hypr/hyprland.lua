@@ -110,7 +110,19 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("systemctl --user start hyprpolkitagent")
   -- Bar + notifications
   hl.exec_cmd("waybar")
+  -- Refreshes waybar's clickable workspace tags (custom/wsN) on workspace
+  -- changes. Needed because the native hyprland/workspaces module's click is
+  -- broken under the Lua config, so we render the tags ourselves. See the
+  -- waybar config comment and configs/hypr/scripts/waybar-ws-listener.
+  hl.exec_cmd("~/.config/hypr/scripts/waybar-ws-listener")
   hl.exec_cmd("dunst")
+  -- App dock. Pinned apps live in ~/.cache/nwg-dock-pinned. "-r" keeps it
+  -- resident + always visible (no auto-hide hotspot; swap to "-d" for auto-hide).
+  -- "-x" reserves an exclusive zone so windows tile above the dock instead of
+  -- under it. "-mb 8" floats the icons off the bottom edge; "-o DP-1" pins the
+  -- dock to the main monitor (without it the dock follows focus across outputs).
+  -- Styling lives in ~/.config/nwg-dock-hyprland/style.css (transparent, icons-only).
+  hl.exec_cmd("nwg-dock-hyprland -r -i 40 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher")
   -- Idle / lock daemon
   hl.exec_cmd("hypridle")
   -- Clipboard history (text + images)

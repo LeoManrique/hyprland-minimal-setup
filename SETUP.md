@@ -30,6 +30,12 @@ tutorial/dotfiles repo online still uses the old syntax and will NOT work.**
 
 Old-syntax docs (if ever needed): <https://wiki.hypr.land/0.54.0/>
 
+**This also affects IPC.** `hyprctl dispatch` (and the socket commands tools send)
+are evaluated as Lua: `dispatch workspace 3` becomes `hl.dispatch(workspace 3)` —
+a syntax error. The Lua form is `hyprctl dispatch 'hl.dsp.focus({ workspace = "3" })'`.
+This is why waybar's native `hyprland/workspaces` click doesn't work and we roll
+our own — see [Clickable workspace tags](#clickable-workspace-tags).
+
 ---
 
 ## The stack
@@ -128,8 +134,134 @@ volume, so the quick actions stay on the icon. (Monitor sources are hidden.)
 `pacman` line above. The launcher shows app icons via the Papirus-Dark theme;
 drop `icons-enabled`/`icon-theme` in `fuzzel.ini` for a pure-text look.)
 
+### App dock
+
+A macOS-style dock at the bottom-center, provided by **`nwg-dock-hyprland`** (AUR):
+
+```bash
+yay -S nwg-dock-hyprland
+```
+
+It's auto-started from `hyprland.lua` with `-r` (resident): the dock is **always
+visible** — no auto-hide hotspot. (`-d` would auto-hide it until you push the
+mouse to the bottom-center; we dropped that because the hotspot was finicky.)
+`-mb 8` floats the icons off the bottom edge (matches `gaps_out`), and **`-o
+DP-1` pins the dock to the main monitor** — without it nwg-dock follows the
+focused output and hops between screens. (Swap `DP-1` for your primary output;
+`hyprctl monitors` lists them.) It shows **pinned apps** plus any other
+**running** apps, each with a cyan indicator under running ones; clicking focuses
+the app (cycling its windows) or launches it. Real app icons come from the GTK
+icon theme, which is why `gtk-3.0/settings.ini` sets **Papirus-Dark** (without it
+GTK falls back to Adwaita and most icons go blank). **`-x` reserves an exclusive
+zone**, so windows tile above the dock and leave a clean strip at the bottom
+rather than the dock floating over them; drop `-x` if you'd prefer it to overlay
+windows instead.
+
+**Styling** lives in `nwg-dock-hyprland/style.css` → deployed to
+`~/.config/nwg-dock-hyprland/style.css`. It's a minimal "hacker" theme:
+**transparent background (icons-only, no panel)** with a single cyan accent
+(`#33ccff`, the same color as Hyprland's `col.active_border`) used for a subtle
+hover wash and the running-app underline. The CSS is read **only at dock
+startup**, so after editing it you must restart the dock (`hyprctl reload` won't
+— the dock is launched from the `hyprland.start` handler, which only fires at
+session start):
+
+```bash
+cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/style.css
+# NB: kill by the truncated comm name, NOT `pkill -f nwg-dock-hyprland` — the
+# -f form also matches your own shell's command line and kills the terminal.
+pkill nwg-dock-hyprla
+setsid nwg-dock-hyprland -r -i 40 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher &
+```
+
+Two intentional limits: **no icon magnification** (GTK3 CSS has no
+`transform: scale`; that fisheye effect only exists in Plank, an XWayland app
+that behaves poorly under Hyprland), and **no frosted-glass blur** — that needs
+`decoration.blur.enabled = true` in `hyprland.lua`, deliberately left off for
+perf. With the transparent background the dock has nothing to blur anyway, so
+this is moot unless you reintroduce a panel background.
+
+Pinned apps live in `~/.cache/nwg-dock-pinned`, **one window class per line**
+(not a `.desktop` path — that was the gotcha). Find a class with
+`hyprctl clients | grep class`. Our defaults:
+
+```
+foot
+google-chrome
+code
+dev.zed.Zed
+```
+
+To re-pin interactively instead, right-click a running app in the dock → *Pin*.
+Tweak the launch flags in `hyprland.lua` (`-i` icon size, `-p` position,
+drop `-d` to keep it always visible). It runs residently — send `SIGRTMIN+2`/`+3`
+to show/hide, or re-run the bare command to toggle.
+
 > Use `-Syu` (full refresh+upgrade), **never** a bare `-Sy` — partial upgrades
 > break Arch.
+
+### Clickable workspace tags
+
+Waybar's built-in `hyprland/workspaces` module **cannot switch workspaces on
+click here.** Its click is hardcoded to send `dispatch workspace N` over
+Hyprland's IPC socket, and under the Lua config
+that string is evaluated as Lua (`hl.dispatch(workspace N)`) → syntax error (see
+the Lua-vs-hyprlang gotcha at the top of this guide). No
+waybar setting changes what it sends, and Hyprland has no legacy-string fallback,
+so the native module is a dead end for clicking. (Confirmed against waybar
+v0.15.0 / Hyprland 0.55.4.)
+
+Instead we render the workspaces ourselves as ten `custom/ws1..ws10` modules,
+each one clickable and dispatching the **correct** Lua form. The bar is defined
+**once per monitor** (`waybar/config.jsonc` is an array of bar objects, each with
+its own `"output"`), so each bar shows only its own monitor's workspaces. Each
+tag passes its monitor name to `ws-state`:
+
+```jsonc
+"custom/ws3": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1,
+                "exec": "$HOME/.config/hypr/scripts/ws-state DP-1 3",
+                "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'" }
+```
+
+Everything that isn't per-monitor (the module list, clock, audio, network, …)
+lives in **`waybar/shared.jsonc`**, which each bar pulls in via `"include"` — so
+only the `"output"` line and the ten workspace tags differ between the two bars.
+Adjust the output names (`DP-1` / `DP-2`) for your hardware (`hyprctl monitors`
+lists them), and add/remove a bar object per monitor.
+
+Two scripts back this (both pure Python/bash + `hyprctl` — **no `jq`/`socat`**):
+
+- **`hypr/scripts/ws-state <monitor> <id>`** — prints the tag's JSON for that
+  monitor: `ws-active` (the workspace visible on `<monitor>` now), `ws-occupied`
+  (a workspace that lives on `<monitor>` but isn't visible), or `ws-empty`
+  (anything else — collapsed to zero width in CSS, so each bar shows only the
+  workspaces on its own monitor).
+- **`hypr/scripts/waybar-ws-listener`** — tails Hyprland's event socket
+  (`.socket2.sock`) and runs `pkill -RTMIN+1 waybar` on any workspace/monitor
+  change. Every `custom/wsN` listens on `"signal": 1`, so one signal refreshes
+  them all. Autostarted from `hyprland.lua` (`hl.exec_cmd(...)` in the
+  `hyprland.start` handler).
+
+Styling is in `waybar/style.css` under `.ws` / `.ws.ws-active` / `.ws.ws-empty`.
+
+After editing any of these, redeploy and reload (a multi-bar config needs a full
+restart, not just `SIGUSR2`):
+
+```bash
+cp configs/waybar/*            ~/.config/waybar/   # includes shared.jsonc
+cp configs/hypr/scripts/ws-state configs/hypr/scripts/waybar-ws-listener ~/.config/hypr/scripts/
+pkill -x waybar; setsid waybar >/dev/null 2>&1 &  # restart bar + re-read config
+# restart the listener (only auto-starts at login). Do NOT `pkill -f
+# waybar-ws-listener` — the -f form also matches your own shell's command line.
+# Kill the python process by pid, then re-launch via Hyprland so it detaches:
+pkill -f '[w]aybar-ws-listener' 2>/dev/null   # bracket trick avoids self-match
+hyprctl dispatch 'hl.dsp.exec_cmd("~/.config/hypr/scripts/waybar-ws-listener")'
+```
+
+**Per-monitor:** each bar shows and highlights only the workspaces on its own
+output — switching workspaces on one monitor leaves the other bar untouched.
+This relies on the hardcoded output names in `config.jsonc`; update them if your
+monitors are named differently.
 
 ---
 
@@ -184,6 +316,11 @@ cp configs/foot/foot.ini   ~/.config/foot/
 cp configs/waybar/*        ~/.config/waybar/
 cp configs/dunst/dunstrc   ~/.config/dunst/
 cp configs/fuzzel/fuzzel.ini ~/.config/fuzzel/
+mkdir -p ~/.config/gtk-3.0
+cp configs/gtk-3.0/settings.ini ~/.config/gtk-3.0/
+mkdir -p ~/.config/nwg-dock-hyprland
+cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/  # dock theme
+cp configs/nwg-dock-hyprland/pinned ~/.cache/nwg-dock-pinned         # dock's pinned apps
 ```
 
 What each file is:
@@ -193,11 +330,17 @@ What each file is:
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
+| `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor — see [Clickable workspace tags](#clickable-workspace-tags) |
+| `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change (Python, no deps) — autostarted from `hyprland.lua` |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @30min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
-| `waybar/config.jsonc` | bar modules: workspaces · clock · vol/bt/net/cpu/mem (Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`) · tray. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Both pinned top-right via window rules |
+| `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |
+| `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Both pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
+| `nwg-dock-hyprland/pinned` | dock's pinned apps — one **window class** per line (`foot`, `google-chrome`, `code`, `dev.zed.Zed`); deployed to `~/.cache/nwg-dock-pinned` (see [App dock](#app-dock)) |
+| `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |
+| `gtk-3.0/settings.ini` | GTK icon theme = Papirus-Dark (so the dock & GTK apps get real app icons) |
 | `dunst/dunstrc` | black notifications |
 | `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark) |
 

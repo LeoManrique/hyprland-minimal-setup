@@ -28,6 +28,24 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
+- **App dock**: an always-visible bottom-center dock (`nwg-dock-hyprland`, AUR) with
+  pinned + running apps, real Papirus icons, and click-to-focus/launch. Themed
+  minimal: transparent (icons-only, no panel) with a single cyan accent
+  (`#33ccff`, matching the active-window border) for hover + running indicators,
+  pinned to the main monitor (`-o DP-1`) so it doesn't hop between screens.
+  No macOS-style icon magnification — that needs `transform: scale`, which GTK3
+  CSS lacks (Plank can, but only as a janky XWayland app). eww and an in-`waybar`
+  dock were both tried and rejected (eww has no tray + looked off; waybar's
+  `image` module crashes on this box's gdk-pixbuf). See SETUP.md "App dock".
+
+- **Clickable, per-monitor workspace tags**: waybar's native `hyprland/workspaces`
+  click can't switch workspaces under the Lua config — it sends `dispatch
+  workspace N`, which Hyprland evaluates as Lua and rejects (`hl.dispatch(workspace
+  N)` → syntax error). Rebuilt as ten `custom/ws1..ws10` modules that dispatch the
+  correct `hl.dsp.focus({...})` form, with one bar per monitor so each shows only
+  its own output's workspaces, and a tiny Python event listener refreshing the
+  highlight (no `jq`/`socat`). See SETUP.md "Clickable workspace tags".
+
 - **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off
   @10min, `suspend-then-hibernate` @30min. NVIDIA needs its sleep services +
   `NVreg_PreserveVideoMemoryAllocations=1` or it corrupts on resume; swap must be

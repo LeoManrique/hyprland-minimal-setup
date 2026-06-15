@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Emit waybar JSON for one workspace tag on a specific monitor.
+# Usage: ws-state <monitor> <workspace-id>
+#
+# Each waybar bar is per-output (see waybar/config.jsonc + shared.jsonc), so a
+# bar only shows the workspaces that currently live on ITS monitor:
+#   ws-active   -> the workspace visible on <monitor> right now
+#   ws-occupied -> a workspace that lives on <monitor> but isn't the visible one
+#   ws-empty    -> not on this monitor (collapsed to zero width via CSS)
+#
+# Why a custom module at all: waybar's native hyprland/workspaces click sends
+# `dispatch workspace N`, which Hyprland's Lua config rejects as a syntax error.
+# See SETUP.md "Clickable workspace tags". Uses only hyprctl + awk (no jq).
+mon="$1"
+id="$2"
+
+# Visible (active) workspace on this monitor.
+mon_active=$(hyprctl monitors | awk -v m="$mon" '
+  $1 == "Monitor" { on = ($2 == m) }
+  on && $1 == "active" && $2 == "workspace:" { print $3; exit }')
+
+if [ "$id" = "$mon_active" ]; then
+  printf '{"text":"%s","class":["ws","ws-active"]}\n' "$id"
+  exit 0
+fi
+
+# Which monitor does workspace <id> live on? (only listed if it exists at all).
+# Line looks like: "workspace ID 1 (1) on monitor DP-1:"  -> strip trailing ":".
+ws_mon=$(hyprctl workspaces | awk -v id="$id" '
+  $1 == "workspace" && $2 == "ID" && $3 == id { sub(/:$/, "", $NF); print $NF; exit }')
+
+if [ -n "$ws_mon" ] && [ "$ws_mon" = "$mon" ]; then
+  printf '{"text":"%s","class":["ws","ws-occupied"]}\n' "$id"
+else
+  printf '{"text":"","class":["ws","ws-empty"]}\n'
+fi
