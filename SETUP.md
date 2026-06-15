@@ -332,7 +332,7 @@ What each file is:
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
 | `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change (Python, no deps) — autostarted from `hyprland.lua` |
-| `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @30min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
+| `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `size=11` font |
 | `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |

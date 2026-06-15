@@ -47,7 +47,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   highlight (no `jq`/`socat`). See SETUP.md "Clickable workspace tags".
 
 - **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off
-  @10min, `suspend-then-hibernate` @30min. NVIDIA needs its sleep services +
+  @10min, `suspend-then-hibernate` @60min. NVIDIA needs its sleep services +
   `NVreg_PreserveVideoMemoryAllocations=1` or it corrupts on resume; swap must be
   ≥ the kernel hibernation image. See SETUP.md "Idle, lock & hibernate".
 
