@@ -164,13 +164,12 @@ gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark
 gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
 ```
 
-The dock is launched with **`env GDK_SCALE=2`**. nwg-dock is GTK3, which has no
-fractional-scaling support; on this 1.25-scaled monitor it would render its
-surface at 1x and let Hyprland **upscale** it, leaving the icons soft/blurry.
-Forcing `GDK_SCALE=2` makes GTK render at integer 2x so the compositor
-**downscales** 2x → 1.25 instead — crisp icons. Because everything is then in 2x
-logical pixels, the icon size is set with **`-i 44`** to land at the right visual
-size (raise/lower `-i` to taste). **`-x` reserves an exclusive
+Icon size is **`-i 44`** (raise/lower to taste). **Do not** prefix the launch
+with `env GDK_SCALE=2`: nwg-dock is GTK3 (no fractional-scaling support, so its
+icons are slightly soft on the 1.25 monitor), and `GDK_SCALE=2` would sharpen
+them — but the dock **fork/execs the apps you click**, so they'd inherit the
+variable and render double-size. The sharpening wasn't worth that leak. **`-x`
+reserves an exclusive
 zone**, so windows tile above the dock and leave a clean strip at the bottom
 rather than the dock floating over them; drop `-x` if you'd prefer it to overlay
 windows instead.
@@ -189,7 +188,7 @@ cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/style.css
 # NB: kill by the truncated comm name, NOT `pkill -f nwg-dock-hyprland` — the
 # -f form also matches your own shell's command line and kills the terminal.
 pkill nwg-dock-hyprla
-setsid env GDK_SCALE=2 nwg-dock-hyprland -r -i 44 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher &
+setsid nwg-dock-hyprland -r -i 44 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher &
 ```
 
 Two intentional limits: **no icon magnification** (GTK3 CSS has no

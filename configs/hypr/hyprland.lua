@@ -122,10 +122,10 @@ hl.on("hyprland.start", function()
   -- under it. "-mb 8" floats the icons off the bottom edge; "-o DP-1" pins the
   -- dock to the main monitor (without it the dock follows focus across outputs).
   -- Styling lives in ~/.config/nwg-dock-hyprland/style.css (transparent, icons-only).
-  -- "GDK_SCALE=2" forces this GTK3 app to render at integer 2x so the compositor
-  -- DOWNscales to the 1.25 fractional monitor scale (sharp) instead of upscaling
-  -- a 1x surface (blurry). "-i 44" is the icon size in GDK_SCALE=2 logical px.
-  hl.exec_cmd("env GDK_SCALE=2 nwg-dock-hyprland -r -i 44 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher")
+  -- NB: do NOT prefix this with "env GDK_SCALE=2" — nwg-dock fork/execs the apps
+  -- you click, so they'd inherit GDK_SCALE and render double-size. (It sharpened
+  -- the dock's own icons under fractional scale, but the leak isn't worth it.)
+  hl.exec_cmd("nwg-dock-hyprland -r -i 44 -p bottom -a center -mb 8 -o DP-1 -x -nolauncher")
   -- Idle / lock daemon
   hl.exec_cmd("hypridle")
   -- Clipboard history (text + images)
