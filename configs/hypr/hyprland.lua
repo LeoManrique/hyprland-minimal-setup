@@ -152,6 +152,7 @@ hl.bind(mod .. " + R", hl.dsp.exec_cmd("fuzzel"))                        -- laun
 hl.bind(mod .. " + Space", hl.dsp.exec_cmd("fuzzel"))                    -- launcher (macOS Cmd+Space muscle memory)
 hl.bind("ALT + Space", hl.dsp.exec_cmd("fuzzel"))                        -- launcher (Alt+Space too)
 hl.bind(mod .. " + Q", hl.dsp.window.close())                            -- close window (macOS Cmd+Q quit)
+hl.bind("ALT + Q", hl.dsp.window.close())                                -- close window (Alt+Q too)
 hl.bind(mod .. " + M", hl.dsp.exit())                                    -- exit Hyprland
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))

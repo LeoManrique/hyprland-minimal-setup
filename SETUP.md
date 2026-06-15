@@ -631,7 +631,7 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + C` | terminal (foot / console) |
 | `SUPER + B` | default browser (`gtk-launch "$(xdg-settings get default-web-browser)"` — follows your `xdg-settings` default) |
 | `SUPER + R` or `SUPER + Space` | launcher (fuzzel; latter is macOS Cmd+Space muscle memory) |
-| `SUPER + Q` | close window (macOS Cmd+Q quit) |
+| `SUPER + Q` or `ALT + Q` | close window (macOS Cmd+Q quit) |
 | `SUPER + M` | exit Hyprland |
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |
