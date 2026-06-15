@@ -179,6 +179,10 @@ hl.bind(mod .. " + CONTROL + Right", hl.dsp.window.move({ direction = "r" }))
 hl.bind(mod .. " + CONTROL + Up",    hl.dsp.window.move({ direction = "u" }))
 hl.bind(mod .. " + CONTROL + Down",  hl.dsp.window.move({ direction = "d" }))
 
+-- Move the current workspace to the monitor on the left/right
+hl.bind(mod .. " + CONTROL + SHIFT + Left",  hl.dsp.workspace.move({ monitor = "l" }))
+hl.bind(mod .. " + CONTROL + SHIFT + Right", hl.dsp.workspace.move({ monitor = "r" }))
+
 -- Workspaces 1..10
 for i = 1, 9 do
   hl.bind(mod .. " + " .. i, hl.dsp.focus({ workspace = i }))

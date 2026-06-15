@@ -357,6 +357,11 @@ cp configs/gtk-3.0/settings.ini ~/.config/gtk-3.0/
 mkdir -p ~/.config/nwg-dock-hyprland
 cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/  # dock theme
 cp configs/nwg-dock-hyprland/pinned ~/.cache/nwg-dock-pinned         # dock's pinned apps
+mkdir -p ~/.config/xremap ~/.config/systemd/user
+cp configs/xremap/config.yml ~/.config/xremap/                       # macOS-style key remaps
+cp configs/systemd/user/xremap.service ~/.config/systemd/user/       # xremap autostart unit
+systemctl --user daemon-reload
+systemctl --user enable --now xremap.service                         # see graphical-session note in Step 4
 ```
 
 What each file is:
@@ -380,6 +385,8 @@ What each file is:
 | `gtk-3.0/settings.ini` | GTK theme = **adw-gtk3-dark** (`adw-gtk-theme`, extra repo) for dark widgets/menus, icon theme = Papirus-Dark (real app icons). Also run `gsettings set org.gnome.desktop.interface color-scheme prefer-dark` + `gtk-theme adw-gtk3-dark` so GTK4/libadwaita apps follow (see [App dock](#app-dock)) |
 | `dunst/dunstrc` | black notifications |
 | `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark), `SF Mono:size=13` |
+| `xremap/config.yml` | macOS-style key remaps — **Alt acts as Command** (Alt+C/V/X/A/Z/S/F/… → Ctrl+…); a `foot`-only block keeps terminal copy/paste on Ctrl+Shift. Needs `xremap-hypr-bin` for per-app matching — see [macOS-style Alt = Command](#macos-style-alt--command-xremap) |
+| `systemd/user/xremap.service` | user unit that autostarts xremap; `PartOf`/`WantedBy=graphical-session.target` (see Step 4 — the target must be started for it to run) |
 
 > **hypridle/hyprlock use the old `.conf` (hyprlang) format** — that's correct;
 > only the main Hyprland config moved to Lua. Other `hypr*` tools didn't.
@@ -643,11 +650,47 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + CONTROL + arrows` | move window |
 | `SUPER + 1..0` | switch workspace |
 | `SUPER + SHIFT + 1..0` or `SUPER + CONTROL + 1..0` | move window to workspace |
+| `SUPER + CONTROL + SHIFT + Left/Right` | move current workspace to the monitor on the left/right |
 | `SUPER + S` / `SUPER + SHIFT + S` | toggle / move-to scratchpad |
-| `Print` / `SHIFT + Print` | region / full screenshot → clipboard |
+| `Print` (or `ALT + CTRL + SHIFT + 4`) / `SHIFT + Print` | region / full screenshot → clipboard |
 
 If the config has an error, Hyprland still boots with emergency binds
 `SUPER+Q` / `SUPER+R` / `SUPER+M`. Edit the live config and `hyprctl reload`.
+
+---
+
+## macOS-style Alt = Command (xremap)
+
+`xremap` (`configs/xremap/config.yml`, deployed to `~/.config/xremap/config.yml`)
+makes **Alt behave like the macOS Command key** for app shortcuts: `Alt+C/V/X/A/Z/S/F/T/W/N/R/P/O/L` and `Alt+Enter` are remapped to their `Ctrl+…` equivalents. A `foot`-only block (listed **first**, so it wins) instead maps
+`Alt+C/V/T/W/N` to `Ctrl+Shift+…` so the terminal keeps its copy/paste/new-tab
+bindings, and `Alt+K → Ctrl+L` clears. `exact_match` is off, so extra modifiers
+fall through (`Alt+Shift+Z → Ctrl+Shift+Z` redo comes for free). Ctrl and Super
+are never remapped.
+
+> **xremap sits *in front of* the compositor.** It grabs physical keys at the
+> evdev level and emits the remapped key, so Hyprland only ever sees the
+> *output*. That means an `Alt+<key>` listed here is consumed before any
+> Hyprland `ALT + …` bind can fire. **Alt+Q is deliberately *not* in the remap
+> list** — it falls through to Hyprland's `ALT + Q` → close-window bind (the
+> macOS Cmd+Q feel), mirroring `SUPER + Q`. If you add an `Alt-q:` line back to
+> the config, the Hyprland bind silently stops working.
+
+A trailing **`Screenshots`** block (no application filter, so it matches every
+app — keys it doesn't define fall through from the foot/GUI blocks above) maps
+`Alt+Ctrl+Shift+4 → KEY_SYSRQ`, i.e. it emits the **PrintScreen** key. Hyprland's
+`Print` bind then runs `grim -g "$(slurp)"` for a macOS-style region grab. It's
+done here rather than as a Hyprland `bind` so the shortcut lives at the input
+layer and isn't tied to the compositor. (xremap releases the held modifiers
+before emitting `KEY_SYSRQ`, so Hyprland sees a bare `Print`, not
+`Alt+Ctrl+Shift+Print`.)
+
+Reload after editing: `systemctl --user restart xremap.service` (the unit also
+runs `--watch`, but a restart is definitive). The unit is `PartOf` /
+`WantedBy=graphical-session.target`, so it only starts once that target is up —
+see the [graphical-session.target note in Step 4](#step-4--login-plain-getty-manual-hyprland-start). Per-application matching (the `foot` block) needs the
+`xremap-hypr-bin` build; `xremap-gnome-bin` loses it (see the package note in
+[Step 1](#step-1--install-packages)).
 
 ---
 
@@ -798,6 +841,7 @@ source and is selectable in OBS / `pactl list short sources`. No driver needed.
 - Monitor positions are **logical** pixels (after scale).
 - **No display manager, no autostart** — `getty` login → plain shell → manual `start-hyprland`; `SUPER + M` returns to the tty.
 - **No DM means `hyprland.lua` must start `graphical-session.target` itself** (Step 4c) — otherwise `xremap` / polkit / portals never run even though Hyprland is up.
+- **`xremap` intercepts keys *before* Hyprland** — any `Alt+<key>` it remaps never reaches a Hyprland `ALT + …` bind, so the bind silently won't fire (this is why `Alt+Q` close needs its `Alt-q` line kept *out* of `xremap/config.yml`). See [macOS-style Alt = Command](#macos-style-alt--command-xremap).
 - NVIDIA 50xx **requires** the open kernel modules.
 - NVIDIA + mismatched dual monitors → the **text console** (GRUB/login/shutdown)
   is zoomed top-left; unsolved, and **don't** use `fbdev=0` (it black-screens).

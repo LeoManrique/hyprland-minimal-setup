@@ -1,0 +1,52 @@
+# ~/.config/xremap/config.yml
+# macOS-style shortcuts: Alt acts as Command.
+# Ctrl and Super are never remapped. Tab and backtick are never listed,
+# so Alt+Tab, Alt+`, and Ctrl+Tab keep their GNOME defaults.
+# exact_match defaults to false, so extra modifiers are forwarded:
+#   Alt+Shift+Z -> Ctrl+Shift+Z (redo) comes for free.
+
+keymap:
+  # --- Terminal (foot) ----------------------------------------------------
+  # Listed FIRST so it wins (xremap uses the first matching block).
+  # Only these Alt combos are remapped in the terminal; every other Alt+key
+  # falls through and is NOT remapped, so readline keys and Ctrl+C / Ctrl+D /
+  # Ctrl+Z stay exactly as they are.
+  # NOTE: application matching only works with the `xremap-hypr-bin` build on
+  # Hyprland; the `-gnome-bin` build reports "GNOME (supported: false)" here.
+  - name: Terminal (foot)
+    application:
+      only: [foot]
+    remap:
+      Alt-c: Ctrl-Shift-c     # copy
+      Alt-v: Ctrl-Shift-v     # paste
+      Alt-t: Ctrl-Shift-t     # new tab (if configured)
+      Alt-w: Ctrl-Shift-w     # close
+      Alt-n: Ctrl-Shift-n     # new window
+      Alt-k: Ctrl-l           # clear
+
+  # --- Everything else (normal GUI apps) ----------------------------------
+  - name: GUI apps (Alt = Command)
+    application:
+      not: [foot]
+    remap:
+      Alt-c: Ctrl-c
+      Alt-v: Ctrl-v
+      Alt-x: Ctrl-x
+      Alt-a: Ctrl-a
+      Alt-z: Ctrl-z
+      Alt-s: Ctrl-s
+      Alt-f: Ctrl-f
+      Alt-t: Ctrl-t
+      Alt-w: Ctrl-w
+      Alt-n: Ctrl-n
+      Alt-r: Ctrl-r
+      Alt-p: Ctrl-p
+      Alt-o: Ctrl-o
+      Alt-l: Ctrl-l
+      Alt-enter: Ctrl-enter
+
+  # --- Global: screenshots (any app, incl. foot) --------------------------
+  # Not in foot/GUI blocks above, so it falls through to here for every app.
+  - name: Screenshots
+    remap:
+      Alt-Ctrl-Shift-4: KEY_SYSRQ   # -> PrintScreen; Hyprland `Print` = grim region

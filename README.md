@@ -28,6 +28,16 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
+- **macOS-style Alt = Command** — `xremap` (`configs/xremap/`, autostarted by a
+  user `xremap.service`) remaps `Alt+C/V/X/Z/…` to `Ctrl+…` for app shortcuts,
+  with a `foot`-only block keeping the terminal on `Ctrl+Shift`. xremap sits in
+  front of the compositor, so any `Alt+<key>` it remaps never reaches a Hyprland
+  bind — `Alt+Q` is left out of the remap list on purpose so it falls through to
+  Hyprland's close-window bind (`ALT + Q`, mirroring `SUPER + Q`). A trailing
+  `Screenshots` block also maps `Alt+Ctrl+Shift+4` to the PrintScreen key (region
+  grab) at the input layer, so it isn't tied to Hyprland. SETUP.md
+  "macOS-style Alt = Command (xremap)" has the details.
+
 - **App dock**: an always-visible bottom-center dock (`nwg-dock-hyprland`, AUR) with
   pinned + running apps, real Papirus icons, and click-to-focus/launch. GTK widget
   theme is **adw-gtk3-dark** so the right-click context menu (and all GTK apps)

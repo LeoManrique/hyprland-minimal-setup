@@ -1,0 +1,14 @@
+[Unit]
+Description=xremap key remapper (macOS-style Alt=Command)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# --watch re-grabs devices on hotplug (useful for the wireless G515)
+ExecStart=/usr/bin/xremap --watch %h/.config/xremap/config.yml
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
