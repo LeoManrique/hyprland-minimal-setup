@@ -7,16 +7,23 @@
 # workspace. Empty input clears the name; Esc/cancel keeps the current one. The
 # matching reader is ws-state (it turns "<id>" into "<id>:<name>" in the bar).
 #
-# fuzzel's --prompt-only makes it a pure text-input box (no stdin list); it prints
-# the typed text on Enter and exits non-zero on cancel. --search prefills it with
-# the current name so renames edit in place.
+# fuzzel won't return anything on Enter when its input box is empty, so a pure
+# --prompt-only box can never submit an empty string — i.e. you could never clear
+# a name. Instead we feed dmenu a single blank list entry: when the box is empty
+# that entry is the selected match, so Enter prints "" (clearing the name); the
+# moment you type anything the blank entry is filtered out and Enter returns your
+# typed text as a custom entry, exactly as before. --lines=0 keeps the entry off
+# screen so the box still looks like a plain text input (no blank match row).
+# Cancel (Esc) still exits non-zero. --search prefills the current name so renames
+# edit in place.
 id="$1"
 store="${XDG_STATE_HOME:-$HOME/.local/state}/waybar/ws-names"
 mkdir -p "$(dirname "$store")"; [ -f "$store" ] || : > "$store"
 
 current=$(awk -F'\t' -v id="$id" '$1 == id { print $2; exit }' "$store")
 
-name=$(fuzzel --dmenu --prompt-only="ws $id: " --search="$current") || exit 0
+name=$(printf '%s\n' "" | fuzzel --dmenu --lines=0 \
+  --prompt="ws $id: " --search="$current") || exit 0
 name=${name//$'\t'/ }   # tab is the field separator — never store a literal tab
 
 # Rewrite the store without this id, then re-add it only if a name was given.

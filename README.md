@@ -50,6 +50,13 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   dock were both tried and rejected (eww has no tray + looked off; waybar's
   `image` module crashes on this box's gdk-pixbuf). See SETUP.md "App dock".
 
+- **File manager**: **Thunar** (`SUPER + E`), chosen over Nautilus/Nemo/PCManFM
+  for the best capability-per-dependency ratio with **no GNOME/Cinnamon session
+  baggage**. One gotcha: on this minimal install its "Open Terminal Here" fails
+  (`Could not find fallback TerminalEmulator`) — fixed by registering `foot` as
+  the exo `TerminalEmulator` helper by hand (`configs/xfce4/`). See SETUP.md
+  "File manager (Thunar)".
+
 - **Clickable, per-monitor workspace tags**: waybar's native `hyprland/workspaces`
   click can't switch workspaces under the Lua config — it sends `dispatch
   workspace N`, which Hyprland evaluates as Lua and rejects (`hl.dispatch(workspace
@@ -57,7 +64,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   correct `hl.dsp.focus({...})` form, with one bar per monitor so each shows only
   its own output's workspaces, and a tiny Python event listener refreshing the
   highlight (no `jq`/`socat`). Left-click focuses; **right-click renames** the
-  workspace (fuzzel prompt → shows as `<id>:<name>`, persisted across reboots).
+  workspace (fuzzel prompt → shows as `<id>: <name>`, persisted across reboots).
   Names clear automatically when a workspace empties out and Hyprland destroys it.
   See SETUP.md "Clickable workspace tags".
 

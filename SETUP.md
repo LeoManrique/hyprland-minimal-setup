@@ -259,10 +259,13 @@ Two scripts back this (both pure Python/bash + `hyprctl` — **no `jq`/`socat`**
   (a workspace that lives on `<monitor>` but isn't visible), or `ws-empty`
   (anything else — collapsed to zero width in CSS, so each bar shows only the
   workspaces on its own monitor). If the workspace has a user label it shows as
-  `<id>:<name>`, otherwise just `<id>`.
+  `<id>: <name>`, otherwise just `<id>`.
 - **`hypr/scripts/ws-rename <id>`** — wired to each tag's `on-click-right`.
-  Right-clicking a tag pops a `fuzzel` text box (`--prompt-only`, prefilled with
-  the current name) to label that workspace; empty input clears it. Labels are
+  Right-clicking a tag pops a `fuzzel` box (prefilled with the current name) to
+  label that workspace. To clear a name, empty the box and press Enter — fuzzel
+  won't submit an empty input box on its own, so the script feeds dmenu one blank
+  list entry that's highlighted (and selectable with Enter) only while the box is
+  empty; type anything and it's filtered out, so Enter returns your text. Labels are
   global per workspace id (both bars read the same store), persist across reboots
   in `${XDG_STATE_HOME:-~/.local/state}/waybar/ws-names` (`<id><TAB><name>` per
   line), and the script signals waybar to refresh. **Only visible tags are
@@ -371,7 +374,7 @@ What each file is:
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
-| `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>:<name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
+| `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>: <name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change; also clears a workspace's stored label when it's destroyed (Python, no deps) — autostarted from `hyprland.lua` |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
@@ -643,7 +646,8 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |
 | `SUPER + L` or `SUPER + CTRL + Q` | lock now (hyprlock; latter is macOS-style) |
-| `SUPER + E` | color picker (hyprpicker) |
+| `SUPER + E` | file manager (Thunar — see "File manager" section) |
+| `SUPER + P` | color picker (hyprpicker) |
 | `SUPER + .` | clipboard history (cliphist via fuzzel --dmenu) |
 | `SUPER + Escape` | power menu (lock/logout/suspend/hibernate/reboot/shutdown via fuzzel --dmenu) |
 | `SUPER + arrows` | move focus |
@@ -691,6 +695,41 @@ runs `--watch`, but a restart is definitive). The unit is `PartOf` /
 see the [graphical-session.target note in Step 4](#step-4--login-plain-getty-manual-hyprland-start). Per-application matching (the `foot` block) needs the
 `xremap-hypr-bin` build; `xremap-gnome-bin` loses it (see the package note in
 [Step 1](#step-1--install-packages)).
+
+---
+
+## File manager (Thunar)
+
+**Thunar** (Xfce's file manager) is the GUI file manager, launched with
+`SUPER + E`. Picked over Nautilus (drags in the GNOME platform we stripped),
+Nemo (Cinnamon libs), and PCManFM (lighter but thinner feature set) — Thunar has
+the best capability-per-dependency ratio and **no GNOME/Cinnamon session
+baggage**: it only needs `exo`, `xfconf`, and the `libxfce4ui/util` libs.
+
+```bash
+sudo pacman -S --needed thunar tumbler
+# tumbler = thumbnailer (image/PDF/font previews). For video thumbnails too:
+#   sudo pacman -S ffmpegthumbnailer
+```
+
+> **Gotcha — "Open Terminal Here" fails out of the box.** On this minimal
+> install `/usr/share/xfce4/helpers/` is empty and there is **no**
+> `exo-preferred-applications` GUI, so Thunar can't resolve a `TerminalEmulator`
+> and throws *"Could not find fallback TerminalEmulator application."* Fix it by
+> registering `foot` as the exo terminal helper manually (the two files in
+> `configs/xfce4/`):
+>
+> ```bash
+> mkdir -p ~/.local/share/xfce4/helpers ~/.config/xfce4
+> cp configs/xfce4/helpers/foot.desktop ~/.local/share/xfce4/helpers/   # defines the helper
+> cp configs/xfce4/helpers.rc          ~/.config/xfce4/                 # selects it: TerminalEmulator=foot
+> # verify (should open foot in $HOME):
+> exo-open --launch TerminalEmulator --working-directory "$HOME"
+> ```
+>
+> The helper's `X-XFCE-CommandsWithParameter=foot %s` is what lets "Open Terminal
+> Here" run a command inside foot (foot takes the command as positional args, no
+> `-e` needed).
 
 ---
 

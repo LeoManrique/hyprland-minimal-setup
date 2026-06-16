@@ -15,12 +15,12 @@ mon="$1"
 id="$2"
 
 # Optional user label for this workspace (set via ws-rename, global per id). The
-# bar shows "<id>:<name>" when named, or just "<id>" otherwise. JSON-escape it so
+# bar shows "<id>: <name>" when named, or just "<id>" otherwise. JSON-escape it so
 # a name with " or \ can't break the emitted object.
 store="${XDG_STATE_HOME:-$HOME/.local/state}/waybar/ws-names"
 name=$(awk -F'\t' -v id="$id" '$1 == id { print $2; exit }' "$store" 2>/dev/null)
 label="$id"
-[ -n "$name" ] && label="$id:$name"
+[ -n "$name" ] && label="$id: $name"
 label=$(printf '%s' "$label" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
 # Visible (active) workspace on this monitor.
