@@ -68,15 +68,13 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Names clear automatically when a workspace empties out and Hyprland destroys it.
   See SETUP.md "Clickable workspace tags".
 
-- **CPU / GPU / power bar indicators**: `custom/cpu` shows usage with a
-  model/freq/temp/package-power tooltip (no per-core noise), `custom/gpu` shows
-  NVIDIA utilization (`nvidia-smi`) with a temp/VRAM/power tooltip, and
-  `custom/power` shows **total measurable power = Intel CPU package (RAPL) +
-  NVIDIA board watts** — not wall power (no PSU sensor; RAM / drives / PSU loss
-  excluded). All three are fed by one `hypr/scripts/sys-stats` (the nvidia-smi
-  call is cached and only the GPU/power modules use it). CPU watts need RAPL
-  readable as non-root, via a udev rule that relaxes the PLATYPUS
-  (CVE-2020-8694) lock. See SETUP.md "CPU, GPU and power indicators".
+- **CPU / GPU bar indicators**: `custom/cpu` shows usage with a
+  model/freq/temp/package-power tooltip (no per-core noise), and `custom/gpu`
+  shows NVIDIA utilization (`nvidia-smi`) with a temp/VRAM/power tooltip. Both
+  are fed by one `hypr/scripts/sys-stats` (the nvidia-smi call is cached and only
+  the GPU module uses it). The CPU-watt tooltip field needs RAPL readable as
+  non-root, via a udev rule that relaxes the PLATYPUS (CVE-2020-8694) lock. See
+  SETUP.md "CPU and GPU indicators".
 
 - **Close a whole workspace**: `SUPER + CTRL + SHIFT + Q` runs
   `scripts/close-workspace`, which gracefully closes every window on the active

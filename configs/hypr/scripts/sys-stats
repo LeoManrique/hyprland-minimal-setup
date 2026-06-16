@@ -1,30 +1,23 @@
 #!/usr/bin/env bash
-# sys-stats <cpu|gpu|power> — Waybar JSON for the CPU, GPU and total-power boxes.
+# sys-stats <cpu|gpu> — Waybar JSON for the CPU and GPU boxes.
 #
-#   cpu    -> CPU utilization %        (tooltip: model, freq, temp, package power)
-#   gpu    -> GPU utilization %        (tooltip: temp, VRAM, board power)
-#   power  -> CPU(RAPL) + GPU watts    (tooltip: per-rail breakdown)
+#   cpu -> CPU utilization %   (tooltip: model, freq, temp, package power)
+#   gpu -> GPU utilization %   (tooltip: temp, VRAM, board power)
 #
-# "power" sums only the two big *measurable* rails: the Intel CPU package via
-# RAPL (/sys/class/powercap) and the NVIDIA board via nvidia-smi. It is NOT
-# wall-socket power — this machine has no PSU sensor — so RAM, drives, fans, the
-# motherboard, and PSU conversion loss (a few tens of W) are not counted.
-#
-# RAPL's energy_uj is root-only by default; the udev rule
-# configs/system/81-rapl-readable.rules makes it world-readable. Without it the
-# CPU/total power readings degrade to "unavailable".
+# CPU package power in the cpu tooltip comes from Intel RAPL
+# (/sys/class/powercap). energy_uj is root-only by default; the udev rule
+# configs/system/81-rapl-readable.rules makes it readable — without it the cpu
+# tooltip simply omits the watt figure (everything else still works).
 #
 # Percentages and watts are derived from /proc/stat and energy_uj *deltas*
 # between consecutive ticks (per-field state files in $XDG_RUNTIME_DIR), so
-# there is no in-script sleep. The one nvidia-smi call (gpu/power only) is
-# cached ~2s so the two GPU-reading modules share it.
+# there is no in-script sleep. The nvidia-smi call (gpu only) is cached ~2s.
 set -euo pipefail
 
 field="${1:-gpu}"
 run="${XDG_RUNTIME_DIR:-/tmp}"
 rapl="/sys/class/powercap/intel-rapl:0"
 
-# --- read RAPL package energy (µJ) into $e_now, empty if unreadable ----------
 read_rapl() { e_now=$(cat "$rapl/energy_uj" 2>/dev/null || echo ""); }
 rapl_wrap() { cat "$rapl/max_energy_range_uj" 2>/dev/null || echo 0; }
 
@@ -82,7 +75,7 @@ if [[ "$field" == "cpu" ]]; then
 fi
 
 # ============================================================================
-# nvidia-smi query, cached ~2s and shared by the gpu + power fields
+# GPU utilization module  (nvidia-smi, cached ~2s)
 # ============================================================================
 ncache="$run/waybar-nvidia.cache"
 if [[ ! -s "$ncache" ]] || (( $(date +%s) - $(stat -c %Y "$ncache" 2>/dev/null || echo 0) >= 2 )); then
@@ -94,42 +87,7 @@ if [[ ! -s "$ncache" ]] || (( $(date +%s) - $(stat -c %Y "$ncache" 2>/dev/null |
 fi
 IFS=', ' read -r g_util g_power g_temp g_memused g_memtotal < "$ncache" 2>/dev/null || true
 
-# --- GPU utilization module --------------------------------------------------
-if [[ "$field" == "gpu" ]]; then
-  if [[ -z "${g_util:-}" ]]; then printf '{"text":"n/a","tooltip":"GPU unavailable"}\n'; exit 0; fi
-  gpw=$(printf '%.0f' "${g_power:-0}")
-  tip="GPU ${g_util}%  ·  ${gpw} W  ·  ${g_temp}°C  ·  ${g_memused}/${g_memtotal} MiB VRAM"
-  printf '{"text":"%s%%","percentage":%s,"tooltip":"%s"}\n' "$g_util" "$g_util" "$tip"
-  exit 0
-fi
-
-# --- total-power module ------------------------------------------------------
+if [[ -z "${g_util:-}" ]]; then printf '{"text":"n/a","tooltip":"GPU unavailable"}\n'; exit 0; fi
 gpw=$(printf '%.0f' "${g_power:-0}")
-cpw=""; rapl_ok=0
-rstate="$run/waybar-rapl.state"
-now_ns=$(date +%s%N)
-read_rapl
-if [[ -n "$e_now" ]]; then
-  rapl_ok=1
-  if [[ -r "$rstate" ]]; then
-    read -r e_prev t_prev < "$rstate" || true
-    if [[ -n "${e_prev:-}" && -n "${t_prev:-}" ]]; then
-      de=$(( e_now - e_prev )); (( de < 0 )) && de=$(( de + $(rapl_wrap) ))
-      dt=$(( now_ns - t_prev ))
-      (( dt > 0 )) && cpw=$(awk -v de="$de" -v dt="$dt" 'BEGIN{printf "%.0f",de/(dt/1e9)/1e6}')
-    fi
-  fi
-  printf '%s %s\n' "$e_now" "$now_ns" > "$rstate"
-fi
-
-if [[ -n "$cpw" ]]; then
-  total=$(( cpw + gpw ))
-  tip="CPU ${cpw} W  +  GPU ${gpw} W  =  ${total} W\\n(measurable rails only — excludes RAM/drives/PSU loss)"
-elif (( rapl_ok )); then
-  total="$gpw"
-  tip="GPU ${gpw} W  ·  CPU sampling…"
-else
-  total="$gpw"
-  tip="GPU ${gpw} W  ·  CPU power unavailable (RAPL not readable — see SETUP.md)"
-fi
-printf '{"text":"%s W","tooltip":"%s"}\n' "$total" "$tip"
+tip="GPU ${g_util}%  ·  ${gpw} W  ·  ${g_temp}°C  ·  ${g_memused}/${g_memtotal} MiB VRAM"
+printf '{"text":"%s%%","percentage":%s,"tooltip":"%s"}\n' "$g_util" "$g_util" "$tip"

@@ -302,9 +302,9 @@ output — switching workspaces on one monitor leaves the other bar untouched.
 This relies on the hardcoded output names in `config.jsonc`; update them if your
 monitors are named differently.
 
-### CPU, GPU and power indicators
+### CPU and GPU indicators
 
-The right cluster has three extra modules, all driven by one script
+The right cluster has two extra modules, both driven by one script
 **`hypr/scripts/sys-stats`** (output JSON, 3 s refresh):
 
 - **`custom/cpu`** (`󰻠 N%`) — CPU utilization. Tooltip: model, average
@@ -312,19 +312,18 @@ The right cluster has three extra modules, all driven by one script
   breakdown by design — use a system monitor for that. This module does **not**
   call `nvidia-smi`. Usage % comes from `/proc/stat` deltas between ticks.
 - **`custom/gpu`** (`󰢮 N%`) — NVIDIA GPU utilization. Tooltip: temp, VRAM,
-  board power. Needs `nvidia-smi` (`nvidia-utils`).
-- **`custom/power`** (`󱐋 N W`) — **total measurable power = Intel CPU package
-  (RAPL) + NVIDIA GPU board.** Tooltip breaks it down per rail. This is **not
-  wall-socket power** — the machine has no PSU sensor — so RAM, drives, fans,
-  the motherboard, and PSU conversion loss (a few tens of W) are **not**
-  counted. One `nvidia-smi` call is cached and shared by the gpu + power
-  modules; CPU watts come from the `energy_uj` delta between ticks.
+  board power. Needs `nvidia-smi` (`nvidia-utils`). The one `nvidia-smi` call is
+  cached ~2 s.
 
-**CPU watts (in both the `custom/cpu` tooltip and `custom/power`) need RAPL
-readable by your user.** `/sys/class/powercap/intel-rapl:*/energy_uj` is
-root-only by default (mitigates the PLATYPUS power side-channel, CVE-2020-8694).
-A udev rule relaxes it (survives reboot); without it the CPU-watt fields drop
-out and `custom/power` degrades to GPU-only:
+(There was also a `custom/power` module showing CPU+GPU watts, dropped because
+without a PSU sensor it only saw ~2 of many rails — actual wall draw is several
+times the CPU+GPU sum at idle, so the number was more misleading than useful.
+The per-rail watts still live in the cpu/gpu tooltips.)
+
+**CPU watts in the `custom/cpu` tooltip need RAPL readable by your user.**
+`/sys/class/powercap/intel-rapl:*/energy_uj` is root-only by default (mitigates
+the PLATYPUS power side-channel, CVE-2020-8694). A udev rule relaxes it (survives
+reboot); without it the cpu tooltip just omits the watt figure:
 
 ```bash
 sudo cp configs/system/81-rapl-readable.rules /etc/udev/rules.d/81-rapl-readable.rules
@@ -332,7 +331,7 @@ sudo udevadm control --reload
 sudo udevadm trigger --action=add --subsystem-match=powercap   # apply now, no reboot
 ```
 
-**Other hardware:** the GPU modules assume NVIDIA (`nvidia-smi`); on AMD swap to
+**Other hardware:** the GPU module assumes NVIDIA (`nvidia-smi`); on AMD swap to
 `/sys/class/drm/card*/device/gpu_busy_percent` + `hwmon` power. CPU power assumes
 Intel RAPL; AMD exposes the same `intel-rapl` powercap path on recent kernels,
 so the rule + script usually work unchanged. CPU temp reads the `coretemp`
@@ -415,12 +414,12 @@ What each file is:
 | `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>: <name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change; also clears a workspace's stored label when it's destroyed (Python, no deps) — autostarted from `hyprland.lua` |
-| `hypr/scripts/sys-stats` | emits waybar JSON for the `custom/cpu` (usage + model/freq/temp/power tooltip), `custom/gpu` (NVIDIA utilization, `nvidia-smi`) and `custom/power` (Intel CPU-package RAPL + NVIDIA board watts) modules — see [CPU, GPU and power indicators](#cpu-gpu-and-power-indicators). Needs `configs/system/81-rapl-readable.rules` for CPU watts |
+| `hypr/scripts/sys-stats` | emits waybar JSON for the `custom/cpu` (usage + model/freq/temp/power tooltip) and `custom/gpu` (NVIDIA utilization + temp/VRAM/power tooltip, `nvidia-smi`) modules — see [CPU and GPU indicators](#cpu-and-gpu-indicators). Needs `configs/system/81-rapl-readable.rules` for the CPU-watt tooltip field |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `SF Mono:size=11` font |
 | `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |
-| `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem/gpu/power · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). `custom/cpu` + `custom/gpu` + `custom/power` are fed by `hypr/scripts/sys-stats` (see [CPU, GPU and power indicators](#cpu-gpu-and-power-indicators)). Both bars pinned top-right via window rules |
+| `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem/gpu · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). `custom/cpu` + `custom/gpu` are fed by `hypr/scripts/sys-stats` (see [CPU and GPU indicators](#cpu-and-gpu-indicators)). Both bars pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
 | `nwg-dock-hyprland/pinned` | dock's pinned apps — one **window class** per line (`foot`, `google-chrome`, `code`, `dev.zed.Zed`); deployed to `~/.cache/nwg-dock-pinned` (see [App dock](#app-dock)) |
 | `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |
