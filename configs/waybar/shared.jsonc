@@ -14,7 +14,7 @@
     "custom/ws6", "custom/ws7", "custom/ws8", "custom/ws9", "custom/ws10",
     "hyprland/submap"
   ],
-  "modules-right": ["pulseaudio", "bluetooth", "network", "cpu", "memory", "tray", "clock"],
+  "modules-right": ["pulseaudio", "bluetooth", "network", "custom/cpu", "memory", "custom/gpu", "custom/power", "tray", "clock"],
 
   "hyprland/submap": {
     "format": "[{}]",
@@ -60,14 +60,37 @@
     "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}"
   },
 
-  "cpu": {
-    "format": "󰻠 {usage}%",
-    "interval": 2
+  // CPU utilization (text) + model/freq/temp/package-power in the tooltip.
+  // Driven by sys-stats; intentionally no per-core breakdown (use a system
+  // monitor for that). CPU watts need RAPL readable (see custom/power below).
+  "custom/cpu": {
+    "exec": "$HOME/.config/hypr/scripts/sys-stats cpu",
+    "return-type": "json",
+    "format": "󰻠 {}",
+    "interval": 3
   },
 
   "memory": {
     "format": "󰍛 {percentage}%",
     "interval": 5
+  },
+
+  // GPU utilization (NVIDIA, via nvidia-smi). Tooltip: temp, VRAM, board power.
+  "custom/gpu": {
+    "exec": "$HOME/.config/hypr/scripts/sys-stats gpu",
+    "return-type": "json",
+    "format": "󰢮 {}",
+    "interval": 3
+  },
+
+  // Total measurable power = CPU package (Intel RAPL) + NVIDIA GPU board.
+  // NOT wall power (no PSU sensor) — excludes RAM/drives/PSU loss. CPU watts
+  // need RAPL readable: see configs/system/81-rapl-readable.rules.
+  "custom/power": {
+    "exec": "$HOME/.config/hypr/scripts/sys-stats power",
+    "return-type": "json",
+    "format": "󱐋 {}",
+    "interval": 3
   },
 
   "tray": {
