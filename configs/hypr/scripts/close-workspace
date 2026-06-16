@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# close-workspace — close every window on the active workspace, then leave it so
+# the now-empty workspace collapses.
+# Bound to SUPER + CTRL + SHIFT + Q (one Shift away from the CTRL+Q lock bind).
+# Sends a graceful close to each client, so apps still run their own quit/save
+# logic — no force-kill, no confirmation. A regular workspace is destroyed once
+# it's empty AND no longer displayed, so after closing we focus the previous
+# workspace; Hyprland then collects the one we left (whenever its last window has
+# actually finished closing — closes are async).
+#
+# NB: this config drives Hyprland via the Lua plugin, so `hyprctl dispatch X` is
+# evaluated as Lua `return hl.dispatch(X)`. The bare `dispatch closewindow
+# address:..` form is therefore a Lua syntax error (same trap the workspace tags
+# hit). Everything must go through the Lua dispatchers: hl.dsp.window.close(<sel>)
+# with a WindowSelector string ("address:0x.."), and hl.dsp.focus({ workspace }).
+set -euo pipefail
+
+ws=$(hyprctl activeworkspace -j | jq -r '.id')
+[ -n "$ws" ] || exit 0
+
+# Closing is async and racy: a close dispatched while focus is still shuffling
+# can land on a window that's already going away, leaving one straggler. So
+# re-snapshot the workspace and re-close until it's actually empty. Bounded, so a
+# window that won't close (e.g. one showing a "save changes?" dialog) can't spin
+# the loop forever — after the cap we just leave it behind.
+for _ in 1 2 3 4 5 6 7 8; do
+  addrs=$(hyprctl clients -j | jq -r --argjson ws "$ws" '.[] | select(.workspace.id == $ws) | .address')
+  if [ -z "$addrs" ]; then break; fi
+  while read -r addr; do
+    [ -n "$addr" ] && hyprctl dispatch "hl.dsp.window.close(\"address:$addr\")" || true
+  done <<< "$addrs"
+  sleep 0.15
+done
+
+# Leave the (now-empty) workspace so Hyprland destroys it. "previous" takes us
+# back to wherever we came from.
+hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })' || true

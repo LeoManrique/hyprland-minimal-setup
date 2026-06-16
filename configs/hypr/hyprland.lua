@@ -158,6 +158,7 @@ hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))                      -- lock now
 hl.bind(mod .. " + CTRL + Q", hl.dsp.exec_cmd("hyprlock"))               -- lock now (macOS-style Ctrl+Cmd+Q)
+hl.bind(mod .. " + CTRL + SHIFT + Q", hl.dsp.exec_cmd("~/.config/hypr/scripts/close-workspace"))  -- close ALL windows on the active workspace
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))        -- reload config
 hl.bind(mod .. " + E", hl.dsp.exec_cmd("thunar"))                        -- file manager
 hl.bind(mod .. " + P", hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick color -> clipboard

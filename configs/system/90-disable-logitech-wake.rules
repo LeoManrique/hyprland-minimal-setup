@@ -1,0 +1,4 @@
+# Stop Logitech wireless receiver from waking the system from suspend.
+# 046d:c548 was waking the machine ~14s after every suspend (mouse jitter).
+# Deploy to /etc/udev/rules.d/90-disable-logitech-wake.rules
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", ATTR{power/wakeup}="disabled"

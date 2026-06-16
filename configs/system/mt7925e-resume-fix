@@ -1,0 +1,9 @@
+#!/bin/sh
+# Workaround: MediaTek MT7925 (mt7925e) fails PCI resume with -110 (ETIMEDOUT),
+# leaving Wi-Fi dead until the driver is reloaded. Unload before sleep and
+# reload after resume so the chip is re-initialized cleanly.
+# Deploy to /usr/lib/systemd/system-sleep/mt7925e-resume-fix (chmod +x, root).
+case "$1" in
+  pre)  modprobe -r mt7925e ;;
+  post) modprobe mt7925e ;;
+esac

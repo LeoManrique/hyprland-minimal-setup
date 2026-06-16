@@ -66,7 +66,7 @@ sudo pacman -Syu --needed \
   hypridle hyprlock hyprpicker hyprpolkitagent \
   xdg-desktop-portal-hyprland qt5-wayland qt6-wayland \
   ttf-jetbrains-mono-nerd grim slurp cliphist wl-clipboard brightnessctl \
-  terminus-font bluez bluez-utils
+  terminus-font bluez bluez-utils jq
 ```
 
 > **Terminal/launcher font is SF Mono** (used by `foot` and `fuzzel`). SF Mono
@@ -374,6 +374,7 @@ What each file is:
 | `hypr/hyprland.lua` | main config (Lua) — env, monitors, look, autostart, keybinds |
 | `hypr/scripts/audio-picker` | fuzzel chooser to set the default audio device (waybar volume click) |
 | `hypr/scripts/power-menu` | fuzzel power menu — lock/logout/suspend/hibernate/reboot/shutdown, with a confirm step on the irreversible ones (`SUPER + Escape`) |
+| `hypr/scripts/close-workspace` | gracefully closes every window on the active workspace, then focuses the previous workspace so the empty one collapses; `SUPER + CTRL + SHIFT + Q`. Uses `hyprctl` + `jq`. Goes through the Lua dispatcher `hl.dsp.window.close("address:..")` (bare `dispatch closewindow` is a Lua syntax error in this config) and re-snapshots/re-closes until empty, since closing is async (a single pass can leave a straggler) |
 | `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>: <name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change; also clears a workspace's stored label when it's destroyed (Python, no deps) — autostarted from `hyprland.lua` |
@@ -415,9 +416,23 @@ cp configs/hypr/hypridle.conf ~/.config/hypr/ && pkill -x hypridle; setsid hypri
 
 | Idle | Action | Listener |
 | --- | --- | --- |
-| 5 min | lock screen | `loginctl lock-session` |
-| 10 min | monitors off (DPMS) | `hyprctl dispatch dpms off` |
+| 5 min | monitors off (DPMS) | `hl.dsp.dpms({ action = "disable" })` |
+| 10 min | lock screen | `loginctl lock-session` |
 | 60 min | suspend (→ hibernate @120min) | `systemctl suspend-then-hibernate` |
+
+> **Gotcha — DPMS off needs the Lua dispatch form.** Like the workspace/close
+> binds, `hypridle`'s dpms listener runs through Hyprland IPC, which evaluates the
+> command as **Lua**. The bare `hyprctl dispatch dpms off` becomes
+> `hl.dispatch(dpms off)` → a syntax error, so the screen-off **silently never
+> fires** (it looks like DPMS is broken). Use the Lua form in `hypridle.conf`:
+> `hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'` to turn off and
+> `… "enable" …` to turn back on (also in `on-resume` and `after_sleep_cmd`).
+> Test it live: `hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'` should
+> blank the screens (and return `ok`, not a Lua error).
+>
+> **Screen-off fires *before* lock** here (5 min vs 10 min) by choice — so between
+> 5 and 10 min the screens are off but the session is still unlocked. Swap the two
+> `timeout`s back if you'd rather lock first.
 
 **`suspend-then-hibernate`** suspends to RAM first (instant wake if you return
 soon), then after a delay wakes briefly and hibernates to disk for a full
@@ -455,6 +470,76 @@ busctl call org.freedesktop.login1 /org/freedesktop/login1 \
     org.freedesktop.login1.Manager CanSuspendThenHibernate   # expect: s "yes"
 sudo systemctl suspend-then-hibernate                        # test manually once
 ```
+
+---
+
+## Power management / suspend fixes (this hardware)
+
+Two **machine-specific** suspend bugs hit this box. Both fixes live on the
+system (`/etc`, `/usr/lib`), **not** in `~/.config`, and both are tied to *this*
+hardware — copy them only if you have the same Logitech receiver and MT7925
+Wi-Fi card. Source copies are in [`configs/system/`](./configs/system).
+
+### 1. Immediately wakes back up after Suspend
+
+**Symptom:** selecting Suspend (or `systemctl suspend`) powers down, then the
+machine wakes itself ~14 s later. **Cause:** a **Logitech wireless receiver**
+(`046d:c548`) was armed as a USB wake source, and the slightest mouse jitter
+woke the system. (Confirmed by matching the journal's suspend-enter → suspend-exit
+gaps to ~14 s, and that this receiver had a non-zero `active_count`.)
+
+Find your wake sources — any USB device with `wakeup = enabled` can do this:
+
+```bash
+# which devices are armed to wake the machine
+for f in /sys/bus/usb/devices/*/power/wakeup; do
+  printf '%s %s\n' "$(cat "$f")" "$(dirname "$f")"
+done | grep enabled
+lsusb            # map a 046d:cXXX id to a device
+```
+
+**Fix** — a udev rule disarms the receiver persistently (survives reboot/replug):
+
+```bash
+sudo cp configs/system/90-disable-logitech-wake.rules \
+        /etc/udev/rules.d/90-disable-logitech-wake.rules
+sudo udevadm control --reload
+# apply now without replugging (path from the loop above, e.g. 1-2):
+echo disabled | sudo tee /sys/bus/usb/devices/1-2/power/wakeup
+```
+
+Adjust the `idVendor`/`idProduct` in the rule for *your* culprit device. To keep
+keyboard wake but kill mouse wake, target only the mouse receiver's id.
+
+### 2. `pci_pm_resume returns -110` + dead Wi-Fi after resume
+
+**Symptom:** on resume the console spams
+`mt7925e 0000:05:00.0: PM: pci_pm_resume returns -110` /
+`PM: failed to resume async: error -110`, and Wi-Fi (`wlp5s0`) comes back
+**DOWN / NO-CARRIER**. **Cause:** the **MediaTek MT7925** (`mt7925e`, Filogic 360)
+times out (`-110` = `ETIMEDOUT`) restoring its PCI state across suspend — a known
+driver bug. `disable_aspm` makes no difference (ASPM is already off on the link);
+the only reliable recovery is reloading the driver.
+
+**Fix** — a `systemd-sleep` hook unloads the driver before sleep and reloads it
+after resume, so the chip re-initializes cleanly and NetworkManager auto-reconnects:
+
+```bash
+sudo cp configs/system/mt7925e-resume-fix \
+        /usr/lib/systemd/system-sleep/mt7925e-resume-fix
+sudo chmod +x /usr/lib/systemd/system-sleep/mt7925e-resume-fix   # MUST be executable + root-owned
+```
+
+`systemd-sleep` runs every hook with `pre` before sleeping and `post` after
+waking; the script switches on `$1` (`modprobe -r mt7925e` on `pre`,
+`modprobe mt7925e` on `post`). To recover a card that's *already* wedged without
+rebooting: `sudo modprobe -r mt7925e && sudo modprobe mt7925e`.
+
+> Seeing the `-110` lines flash on screen once right after installing the hook is
+> fine — those are from the *previous* resume. What matters is the **next**
+> suspend/resume cycle is clean. If errors persist, the fallback is to block the
+> chip's deepest PCI power state (`echo 0 | sudo tee /sys/.../d3cold_allowed`); if
+> Wi-Fi resumes but doesn't reconnect, add an `nmcli` nudge to the hook's `post`.
 
 ---
 
@@ -642,6 +727,7 @@ Log in at tty1, then start the desktop manually with `start-hyprland` (do
 | `SUPER + B` | default browser (`gtk-launch "$(xdg-settings get default-web-browser)"` — follows your `xdg-settings` default) |
 | `SUPER + R` or `SUPER + Space` | launcher (fuzzel; latter is macOS Cmd+Space muscle memory) |
 | `SUPER + Q` or `ALT + Q` | close window (macOS Cmd+Q quit) |
+| `SUPER + CTRL + SHIFT + Q` | close **all** windows on the active workspace, then jump to the previous workspace so the empty one collapses (`scripts/close-workspace`; graceful, no confirm — one Shift away from the lock bind, so mind your fingers) |
 | `SUPER + M` | exit Hyprland |
 | `SUPER + SHIFT + R` | reload config |
 | `SUPER + V` / `F` | float / fullscreen toggle |

@@ -68,10 +68,36 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Names clear automatically when a workspace empties out and Hyprland destroys it.
   See SETUP.md "Clickable workspace tags".
 
-- **Idle → lock → hibernate**: `hypridle` escalates lock @5min, monitors-off
-  @10min, `suspend-then-hibernate` @60min. NVIDIA needs its sleep services +
+- **Close a whole workspace**: `SUPER + CTRL + SHIFT + Q` runs
+  `scripts/close-workspace`, which gracefully closes every window on the active
+  workspace (apps still get to run their own quit/save logic — no force-kill, no
+  confirm), then focuses the **previous** workspace so the now-empty one collapses
+  (Hyprland destroys a regular workspace once it's empty and undisplayed). Hyprland
+  has no native "close workspace" dispatcher, so it enumerates clients with
+  `hyprctl` + `jq`. Two gotchas it works around: (1) this is a Lua config, so
+  `hyprctl dispatch` is evaluated as Lua — the close goes through
+  `hl.dsp.window.close("address:..")`, not the bare `closewindow` (which is a Lua
+  syntax error, the same trap the workspace tags hit); (2) closing is async and
+  racy, so it re-snapshots and re-closes until the workspace is actually empty
+  (bounded, so a window with an unsaved-changes dialog can't spin it forever).
+  Deliberately one Shift away from the `SUPER + CTRL + Q` lock bind, mirroring the
+  macOS-style `Q` = quit family.
+
+- **Idle → screen-off → lock → hibernate**: `hypridle` escalates monitors-off
+  @5min, lock @10min, `suspend-then-hibernate` @60min. The DPMS listener **must**
+  use the Lua dispatch form (`hl.dsp.dpms({ action = "disable" })`) — the bare
+  `hyprctl dispatch dpms off` is parsed as Lua and errors, so screen-off silently
+  never fires. NVIDIA needs its sleep services +
   `NVreg_PreserveVideoMemoryAllocations=1` or it corrupts on resume; swap must be
   ≥ the kernel hibernation image. See SETUP.md "Idle, lock & hibernate".
+
+- **Suspend fixes (this hardware)**: two machine-specific suspend bugs, both
+  fixed at the system level (`configs/system/`). A **Logitech receiver**
+  (`046d:c548`) armed as a USB wake source made the box wake itself ~14s after
+  every suspend — disarmed with a udev rule. The **MediaTek MT7925** Wi-Fi card
+  (`mt7925e`) fails PCI resume with `-110` (ETIMEDOUT) and comes back dead — a
+  `systemd-sleep` hook reloads the driver across sleep. See SETUP.md
+  "Power management / suspend fixes".
 
 - **High refresh vs 4K OBS recording**: 4K@160 + high-fps OBS recording dropped
   ~84% of frames; capping the monitor to 120 Hz and OBS to 60 fps fixed it. A
