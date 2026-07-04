@@ -62,7 +62,7 @@ our own — see [Clickable workspace tags](#clickable-workspace-tags).
 | --- | --- |
 | `configs/shared/` | files **identical** on every machine — foot, fuzzel, dunst, gtk, hyprlock, all `hypr/scripts/`, the dock, xremap, waybar `style.css`, and the udev/grub/uinput system rules |
 | `configs/desktop-intel-nvidia/` | the reference desktop's device-specific files — NVIDIA env, dual-4K monitors, `custom/gpu`, `suspend-then-hibernate`, `ter-132b` console, and the Logitech/MT7925 suspend fixes |
-| `configs/ideapad-flex-5/` | the AMD laptop's device-specific files — single `eDP-1` bar, `battery` module, no NVIDIA, plain `suspend`, `ter-118b` console |
+| `configs/ideapad-flex-5/` | the AMD laptop's device-specific files — single `eDP-1` bar, `battery` module, no NVIDIA, plain `suspend`. Keeps the **stock console + GRUB** (its 1080p panel is legible without the desktop's big `ter-132b` font) |
 
 A given relative path lives in **exactly one** of `shared/` or a device folder,
 so deploying a machine is just the union of `shared/` + its `<device-key>/`. The
@@ -447,8 +447,8 @@ What each file is:
 | `gtk-3.0/settings.ini` | GTK theme = **adw-gtk3-dark** (`adw-gtk-theme`, extra repo) for dark widgets/menus, icon theme = Papirus-Dark (real app icons). `gtk-enable-primary-paste=false` disables middle-click paste in GTK apps (read at app startup — restart the app to apply). Also run `gsettings set org.gnome.desktop.interface color-scheme prefer-dark` + `gtk-theme adw-gtk3-dark` so GTK4/libadwaita apps follow (see [App dock](#app-dock)) |
 | `dunst/dunstrc` | black notifications |
 | `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark), `SF Mono:size=13`. **Per-device** `dpi-aware` like `foot.ini` (ideapad sets `no`) |
-| `xremap/config.yml` | macOS-style key remaps — **Alt acts as Command** (Alt+C/V/X/A/Z/S/F/… → Ctrl+…); a `foot`-only block keeps terminal copy/paste on Ctrl+Shift. Needs `xremap-hypr-bin` for per-app matching — see [macOS-style Alt = Command](#macos-style-alt--command-xremap) |
-| `systemd/user/xremap.service` | user unit that autostarts xremap; `PartOf`/`WantedBy=graphical-session.target` (see Step 4 — the target must be started for it to run) |
+| `xremap/config.yml` | macOS-style key remaps — **Alt acts as Command** (Alt+C/V/X/A/Z/S/F/… → Ctrl+…); a `foot`-only block keeps terminal copy/paste on Ctrl+Shift. Also `BTN_MIDDLE → BTN_LEFT` so middle-click acts as a normal left click. Needs `xremap-hypr-bin` for per-app matching — see [macOS-style Alt = Command](#macos-style-alt--command-xremap) |
+| `systemd/user/xremap.service` | user unit that autostarts xremap (`--watch --mouse`; `--mouse` is required for the middle-click remap); `PartOf`/`WantedBy=graphical-session.target` (see Step 4 — the target must be started for it to run) |
 | `systemd/user/hyprland-session.target` | the session target `hyprland.lua` starts on launch; `BindsTo=graphical-session.target` so it pulls the graphical session up (and everything `WantedBy` it — xremap, portals). **Without this unit the start fails "not found" and nothing autostarts** (see Step 4) |
 
 > **hypridle/hyprlock use the old `.conf` (hyprlang) format** — that's correct;
@@ -844,8 +844,16 @@ layer and isn't tied to the compositor. (xremap releases the held modifiers
 before emitting `KEY_SYSRQ`, so Hyprland sees a bare `Print`, not
 `Alt+Ctrl+Shift+Print`.)
 
+A final global **`Middle click = left click`** block remaps `BTN_MIDDLE → BTN_LEFT`,
+so the mouse's physical middle button emits an ordinary left click instead of its
+usual functions (primary-selection paste, autoscroll, browser open-in-new-tab).
+This needs the service to run with `--mouse` (see below) so xremap grabs the mouse
+device; without it, mouse buttons aren't seen. Note `--mouse` covers real mice
+only — trackpads are absolute devices xremap doesn't grab, so the touchpad is
+unaffected.
+
 Reload after editing: `systemctl --user restart xremap.service` (the unit also
-runs `--watch`, but a restart is definitive). The unit is `PartOf` /
+runs `--watch --mouse`, but a restart is definitive). The unit is `PartOf` /
 `WantedBy=graphical-session.target`, so it only starts once that target is up —
 see the [graphical-session.target note in Step 4](#step-4--login-plain-getty-manual-hyprland-start). Per-application matching (the `foot` block) needs the
 `xremap-hypr-bin` build; `xremap-gnome-bin` loses it (see the package note in

@@ -42,8 +42,10 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   bind — `Alt+Q` is left out of the remap list on purpose so it falls through to
   Hyprland's close-window bind (`ALT + Q`, mirroring `SUPER + Q`). A trailing
   `Screenshots` block also maps `Alt+Ctrl+Shift+4` to the PrintScreen key (region
-  grab) at the input layer, so it isn't tied to Hyprland. SETUP.md
-  "macOS-style Alt = Command (xremap)" has the details.
+  grab) at the input layer, so it isn't tied to Hyprland. A global block remaps
+  `BTN_MIDDLE → BTN_LEFT` (the service runs with `--mouse`) so middle-click acts
+  as a normal left click. SETUP.md "macOS-style Alt = Command (xremap)" has the
+  details.
 
 - **App dock**: an always-visible bottom-center dock (`nwg-dock-hyprland`, AUR) with
   pinned + running apps, real Papirus icons, and click-to-focus/launch. GTK widget

@@ -6,7 +6,8 @@ PartOf=graphical-session.target
 [Service]
 Type=simple
 # --watch re-grabs devices on hotplug (useful for the wireless G515)
-ExecStart=/usr/bin/xremap --watch %h/.config/xremap/config.yml
+# --mouse also grabs mouse devices, needed for the BTN_MIDDLE->BTN_LEFT remap
+ExecStart=/usr/bin/xremap --watch --mouse %h/.config/xremap/config.yml
 Restart=on-failure
 RestartSec=2
 

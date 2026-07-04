@@ -50,3 +50,11 @@ keymap:
   - name: Screenshots
     remap:
       Alt-Ctrl-Shift-4: KEY_SYSRQ   # -> PrintScreen; Hyprland `Print` = grim region
+
+  # --- Global: middle click acts as a normal left click -------------------
+  # The mouse's physical middle button emits an ordinary left click instead of
+  # its usual functions (primary paste, autoscroll, browser open-in-new-tab).
+  # Requires the service to run with --mouse so xremap grabs the mouse device.
+  - name: Middle click = left click
+    remap:
+      BTN_MIDDLE: BTN_LEFT
