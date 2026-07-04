@@ -11,7 +11,7 @@ From: GNOME/Wayland. AMD path — no NVIDIA, no MT7925/Logitech suspend fixes.
 - [x] Bluetooth already enabled + active
 - [x] xremap input access (input group + uinput node/module) + autostart fixed
 - [x] First launch from TTY — Hyprland runs; xremap live
-- [x] Fonts: foot/fuzzel dpi-aware=no (157-DPI eDP-1 was ~1.6× huge)
+- [x] Fonts: foot/fuzzel dpi-aware=no (157-DPI eDP-1 was ~1.6× huge); foot SF Mono size=12 weight=medium
 - [x] Touchpad natural scrolling (input.touchpad.natural_scroll)
 - [ ] Verify lid-close/resume  ← next
 - [ ] System: vconsole ter-118b, GRUB text console (after test)
