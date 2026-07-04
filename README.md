@@ -9,7 +9,9 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
 | Path | What it is |
 | --- | --- |
 | **[SETUP.md](./SETUP.md)** | Full step-by-step reproduction guide (install → greeter → first launch) |
-| [`configs/`](./configs) | Exact working copies of every config file |
+| [`configs/`](./configs) | Config files, split into `shared/` + one folder per machine (`desktop-intel-nvidia`, `ideapad-flex-5`) — see [Repo layout](./SETUP.md#repo-layout-shared--per-device) |
+| [`deploy.sh`](./deploy.sh) | `./deploy.sh <device-key>` — copies `shared/` + that machine's configs into `~/.config` |
+| [`tracking/`](./tracking) | Per-machine migration checklists (`<device-key>.md`) |
 | [`wiki/`](./wiki) | Offline mirror of the Hyprland wiki — the **Lua**-syntax reference |
 | `html2md.py` | Small script used to convert the mirrored wiki HTML → Markdown |
 
@@ -28,7 +30,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   Step 1 lists what to protect from the `-Rns` cascade (pipewire-pulse, webkit, …)
   and the `xremap-gnome-bin` → `xremap-hypr-bin` swap.
 
-- **macOS-style Alt = Command** — `xremap` (`configs/xremap/`, autostarted by a
+- **macOS-style Alt = Command** — `xremap` (`configs/shared/xremap/`, autostarted by a
   user `xremap.service`) remaps `Alt+C/V/X/Z/…` to `Ctrl+…` for app shortcuts,
   with a `foot`-only block keeping the terminal on `Ctrl+Shift`. xremap sits in
   front of the compositor, so any `Alt+<key>` it remaps never reaches a Hyprland
@@ -54,7 +56,7 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   for the best capability-per-dependency ratio with **no GNOME/Cinnamon session
   baggage**. One gotcha: on this minimal install its "Open Terminal Here" fails
   (`Could not find fallback TerminalEmulator`) — fixed by registering `foot` as
-  the exo `TerminalEmulator` helper by hand (`configs/xfce4/`). See SETUP.md
+  the exo `TerminalEmulator` helper by hand (`configs/shared/xfce4/`). See SETUP.md
   "File manager (Thunar)".
 
 - **Clickable, per-monitor workspace tags**: waybar's native `hyprland/workspaces`
@@ -99,8 +101,9 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
   `NVreg_PreserveVideoMemoryAllocations=1` or it corrupts on resume; swap must be
   ≥ the kernel hibernation image. See SETUP.md "Idle, lock & hibernate".
 
-- **Suspend fixes (this hardware)**: two machine-specific suspend bugs, both
-  fixed at the system level (`configs/system/`). A **Logitech receiver**
+- **Suspend fixes (desktop hardware)**: two machine-specific suspend bugs, both
+  fixed at the system level (`configs/desktop-intel-nvidia/system/`; the AMD
+  laptop needs neither). A **Logitech receiver**
   (`046d:c548`) armed as a USB wake source made the box wake itself ~14s after
   every suspend — disarmed with a udev rule. The **MediaTek MT7925** Wi-Fi card
   (`mt7925e`) fails PCI resume with `-110` (ETIMEDOUT) and comes back dead — a

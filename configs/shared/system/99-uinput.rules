@@ -1,0 +1,10 @@
+# udev rule — deploy to /etc/udev/rules.d/99-uinput.rules
+#
+#   sudo cp configs/system/99-uinput.rules /etc/udev/rules.d/99-uinput.rules
+#
+# Lets xremap run as your user (not root): it needs to WRITE the virtual keyboard
+# via /dev/uinput. Default perms are root:root 0600. This hands the node to the
+# `input` group (add yourself: `sudo usermod -aG input $USER`, then re-login) at
+# 0660. `static_node=uinput` applies the perms even before the module is loaded.
+# Reading physical keys (/dev/input/event*) also requires `input` group.
+KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"

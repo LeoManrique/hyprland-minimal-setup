@@ -1,0 +1,98 @@
+// ~/.config/waybar/shared.jsonc — bar settings shared by the bar(s) in
+// config.jsonc, which defines the per-monitor "output" and custom/wsN tags and
+// includes this file for everything common.
+//
+// LAPTOP deltas vs the desktop: "battery" module added; "custom/gpu" (nvidia-smi)
+// removed — this is an AMD iGPU. "custom/cpu" is kept; sys-stats reads k10temp
+// (AMD) for the temp tooltip. CPU-watt tooltip still needs RAPL readable
+// (configs/system/81-rapl-readable.rules) — optional; it degrades gracefully.
+{
+  "layer": "top",
+  "position": "top",
+  "height": 26,
+  "spacing": 0,
+
+  "modules-left": [],
+  "modules-center": [
+    "custom/ws1", "custom/ws2", "custom/ws3", "custom/ws4", "custom/ws5",
+    "custom/ws6", "custom/ws7", "custom/ws8", "custom/ws9", "custom/ws10",
+    "hyprland/submap"
+  ],
+  "modules-right": ["pulseaudio", "bluetooth", "network", "custom/cpu", "memory", "battery", "tray", "clock"],
+
+  "hyprland/submap": {
+    "format": "[{}]",
+    "tooltip": false
+  },
+
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}",
+    "tooltip-format": "<tt>{calendar}</tt>"
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "headphone": "󰋋",
+      "headset": "󰋎",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "$HOME/.config/hypr/scripts/audio-picker",
+    "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-",
+    "tooltip": false
+  },
+
+  "bluetooth": {
+    "format": "󰂯",
+    "format-disabled": "󰂲",
+    "format-off": "󰂲",
+    "format-connected": "󰂱 {num_connections}",
+    "tooltip-format": "{controller_alias}",
+    "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "pkill -x bluetui || foot --app-id=bluetui -e bluetui"
+  },
+
+  "network": {
+    "format-wifi": "󰖩 {signalStrength}%",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰖪",
+    "tooltip-format": "{ifname} {ipaddr}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}"
+  },
+
+  // CPU utilization (text) + model/freq/temp/package-power in the tooltip.
+  // Driven by sys-stats; no per-core breakdown by design. Temp reads k10temp
+  // (AMD) / coretemp (Intel); the CPU-watt tooltip field needs RAPL readable —
+  // see configs/system/81-rapl-readable.rules (optional).
+  "custom/cpu": {
+    "exec": "$HOME/.config/hypr/scripts/sys-stats cpu",
+    "return-type": "json",
+    "format": "󰻠 {}",
+    "interval": 3
+  },
+
+  "memory": {
+    "format": "󰍛 {percentage}%",
+    "interval": 5
+  },
+
+  // Laptop battery. Nerd Font glyphs (ttf-jetbrains-mono-nerd). Turns amber at
+  // 20% (warning) and red at 10% (critical) via CSS state classes.
+  "battery": {
+    "states": { "warning": 20, "critical": 10 },
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰚥 {capacity}%",
+    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "tooltip-format": "{timeTo}  ·  {power}W",
+    "interval": 30
+  },
+
+  "tray": {
+    "spacing": 8
+  }
+}

@@ -47,14 +47,18 @@ if [[ "$field" == "cpu" ]]; then
   fi
   printf '%s %s %s %s\n' "$total" "$idle_all" "${e_now:-0}" "$now_ns" > "$cstate"
 
-  # package temperature (coretemp "Package id 0"); hwmon index is not stable,
-  # so resolve by name + label rather than hardcoding a path.
+  # package temperature — Intel coretemp "Package id 0", else AMD k10temp "Tctl".
+  # hwmon index is not stable, so resolve by chip name + label, not a fixed path.
   temp=""
   for hn in /sys/class/hwmon/hwmon*/name; do
-    [[ "$(cat "$hn" 2>/dev/null)" == "coretemp" ]] || continue
     hd="${hn%/name}"
+    case "$(cat "$hn" 2>/dev/null)" in
+      coretemp) want="Package id 0" ;;
+      k10temp)  want="Tctl" ;;
+      *) continue ;;
+    esac
     for lf in "$hd"/temp*_label; do
-      [[ "$(cat "$lf" 2>/dev/null)" == "Package id 0" ]] || continue
+      [[ "$(cat "$lf" 2>/dev/null)" == "$want" ]] || continue
       temp=$(awk '{printf "%.0f",$1/1000}' "${lf%_label}_input"); break 2
     done
   done

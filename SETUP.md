@@ -54,6 +54,33 @@ our own — see [Clickable workspace tags](#clickable-workspace-tags).
 
 ---
 
+## Repo layout (shared + per-device)
+
+`configs/` is split so more than one machine can share it:
+
+| Folder | Holds |
+| --- | --- |
+| `configs/shared/` | files **identical** on every machine — foot, fuzzel, dunst, gtk, hyprlock, all `hypr/scripts/`, the dock, xremap, waybar `style.css`, and the udev/grub/uinput system rules |
+| `configs/desktop-intel-nvidia/` | the reference desktop's device-specific files — NVIDIA env, dual-4K monitors, `custom/gpu`, `suspend-then-hibernate`, `ter-132b` console, and the Logitech/MT7925 suspend fixes |
+| `configs/ideapad-flex-5/` | the AMD laptop's device-specific files — single `eDP-1` bar, `battery` module, no NVIDIA, plain `suspend`, `ter-118b` console |
+
+A given relative path lives in **exactly one** of `shared/` or a device folder,
+so deploying a machine is just the union of `shared/` + its `<device-key>/`. The
+[`./deploy.sh <device-key>`](./deploy.sh) helper does exactly that for the
+user-space config (`~/.config`, `~/.cache`, `~/.local`); the `system/` files are
+manual `sudo` steps (different destinations, `/etc` & `/usr/lib`).
+
+**Adding a machine:** create `configs/<new-key>/`, copy the closest device
+folder's differing files into it and adjust them, and leave everything identical
+in `shared/`. Track progress in `tracking/<new-key>.md` (one concise checklist).
+
+> **This guide is written for the reference desktop** (`desktop-intel-nvidia`) —
+> the `configs/…` paths below point at that folder or `shared/`. On another
+> machine, substitute your own device folder wherever a file differs. The AMD
+> laptop deltas are called out inline (monitors, GPU/battery module, suspend).
+
+---
+
 ## Step 1 — Install packages
 
 Already present on a typical GNOME-based Arch install: `pipewire`,
@@ -128,7 +155,7 @@ never stacks duplicates:
 yay -S --needed bluetui
 ```
 
-The bar's volume icon left-click runs `configs/hypr/scripts/audio-picker`, a
+The bar's volume icon left-click runs `configs/shared/hypr/scripts/audio-picker`, a
 small two-stage `fuzzel` chooser (pinned top-right like the bluetui panel):
 first pick **Output** or **Input**, then pick the device (current default is
 marked ●). The choice is set as default and
@@ -190,7 +217,7 @@ startup**, so after editing it you must restart the dock (`hyprctl reload` won't
 session start):
 
 ```bash
-cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/style.css
+cp configs/shared/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/style.css
 # NB: kill by the truncated comm name, NOT `pkill -f nwg-dock-hyprland` — the
 # -f form also matches your own shell's command line and kills the terminal.
 pkill nwg-dock-hyprla
@@ -287,8 +314,8 @@ After editing any of these, redeploy and reload (a multi-bar config needs a full
 restart, not just `SIGUSR2`):
 
 ```bash
-cp configs/waybar/*            ~/.config/waybar/   # includes shared.jsonc
-cp configs/hypr/scripts/ws-state configs/hypr/scripts/ws-rename configs/hypr/scripts/waybar-ws-listener configs/hypr/scripts/sys-stats ~/.config/hypr/scripts/
+cp configs/desktop-intel-nvidia/waybar/*.jsonc configs/shared/waybar/style.css ~/.config/waybar/  # config.jsonc + shared.jsonc (device) + style.css (shared)
+cp configs/shared/hypr/scripts/ws-state configs/shared/hypr/scripts/ws-rename configs/shared/hypr/scripts/waybar-ws-listener configs/shared/hypr/scripts/sys-stats ~/.config/hypr/scripts/
 pkill -x waybar; setsid waybar >/dev/null 2>&1 &  # restart bar + re-read config
 # restart the listener (only auto-starts at login). Do NOT `pkill -f
 # waybar-ws-listener` — the -f form also matches your own shell's command line.
@@ -326,7 +353,7 @@ the PLATYPUS power side-channel, CVE-2020-8694). A udev rule relaxes it (survive
 reboot); without it the cpu tooltip just omits the watt figure:
 
 ```bash
-sudo cp configs/system/81-rapl-readable.rules /etc/udev/rules.d/81-rapl-readable.rules
+sudo cp configs/shared/system/81-rapl-readable.rules /etc/udev/rules.d/81-rapl-readable.rules
 sudo udevadm control --reload
 sudo udevadm trigger --action=add --subsystem-match=powercap   # apply now, no reboot
 ```
@@ -379,29 +406,23 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")   -- harmless to keep anywhere
 ## Step 3 — Drop in the config files
 
 > **These are copies, not symlinks.** The live config lives in `~/.config/`;
-> editing `configs/` here and reloading does nothing until you re-copy. Re-run the
-> relevant `cp` (then `hyprctl reload`) after every change.
+> editing `configs/` here and reloading does nothing until you re-deploy. Re-run
+> `./deploy.sh <device-key>` (then `hyprctl reload`) after every change — or
+> re-copy just the one file you touched.
 
-Copy from [`configs/`](./configs) into place:
+Deploy with the helper — it copies `configs/shared/` **and** your machine's
+`configs/<device-key>/` into the live locations (`~/.config`, `~/.cache`,
+`~/.local`) in one shot (see [Repo layout](#repo-layout-shared--per-device)):
 
 ```bash
-mkdir -p ~/.config/hypr ~/.config/foot ~/.config/waybar ~/.config/dunst ~/.config/fuzzel
-cp -r configs/hypr/*       ~/.config/hypr/   # includes scripts/ (chmod +x them)
-cp configs/foot/foot.ini   ~/.config/foot/
-cp configs/waybar/*        ~/.config/waybar/
-cp configs/dunst/dunstrc   ~/.config/dunst/
-cp configs/fuzzel/fuzzel.ini ~/.config/fuzzel/
-mkdir -p ~/.config/gtk-3.0
-cp configs/gtk-3.0/settings.ini ~/.config/gtk-3.0/
-mkdir -p ~/.config/nwg-dock-hyprland
-cp configs/nwg-dock-hyprland/style.css ~/.config/nwg-dock-hyprland/  # dock theme
-cp configs/nwg-dock-hyprland/pinned ~/.cache/nwg-dock-pinned         # dock's pinned apps
-mkdir -p ~/.config/xremap ~/.config/systemd/user
-cp configs/xremap/config.yml ~/.config/xremap/                       # macOS-style key remaps
-cp configs/systemd/user/xremap.service ~/.config/systemd/user/       # xremap autostart unit
+./deploy.sh ideapad-flex-5          # or: ./deploy.sh desktop-intel-nvidia
 systemctl --user daemon-reload
-systemctl --user enable --now xremap.service                         # see graphical-session note in Step 4
+systemctl --user enable --now xremap.service   # see graphical-session note in Step 4
 ```
+
+`deploy.sh` handles **user-space** config only. The **system** files
+(`configs/<device-key>/system/`, `configs/shared/system/`) install to `/etc`,
+`/usr/lib`, … and are one-time `sudo` steps, each covered in its own section below.
 
 What each file is:
 
@@ -414,7 +435,7 @@ What each file is:
 | `hypr/scripts/ws-state` | emits waybar JSON (active/occupied/empty) for one workspace tag on a given monitor; shows `<id>: <name>` when labeled — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/ws-rename` | right-click a workspace tag → fuzzel prompt to label it; persists to `~/.local/state/waybar/ws-names` — see [Clickable workspace tags](#clickable-workspace-tags) |
 | `hypr/scripts/waybar-ws-listener` | tails Hyprland's event socket and signals waybar to refresh the workspace tags on every change; also clears a workspace's stored label when it's destroyed (Python, no deps) — autostarted from `hyprland.lua` |
-| `hypr/scripts/sys-stats` | emits waybar JSON for the `custom/cpu` (usage + model/freq/temp/power tooltip) and `custom/gpu` (NVIDIA utilization + temp/VRAM/power tooltip, `nvidia-smi`) modules — see [CPU and GPU indicators](#cpu-and-gpu-indicators). Needs `configs/system/81-rapl-readable.rules` for the CPU-watt tooltip field |
+| `hypr/scripts/sys-stats` | emits waybar JSON for the `custom/cpu` (usage + model/freq/temp/power tooltip) and `custom/gpu` (NVIDIA utilization + temp/VRAM/power tooltip, `nvidia-smi`) modules — see [CPU and GPU indicators](#cpu-and-gpu-indicators). Needs `configs/shared/system/81-rapl-readable.rules` for the CPU-watt tooltip field |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `SF Mono:size=11` font |
@@ -448,7 +469,7 @@ What each file is:
 Edit `hypr/hypridle.conf`, then deploy + restart:
 
 ```bash
-cp configs/hypr/hypridle.conf ~/.config/hypr/ && pkill -x hypridle; setsid hypridle &
+cp configs/desktop-intel-nvidia/hypr/hypridle.conf ~/.config/hypr/ && pkill -x hypridle; setsid hypridle &
 ```
 
 | Idle | Action | Listener |
@@ -477,7 +498,7 @@ power-off. The delay lives in a systemd drop-in (the default estimate is
 battery-based and never fires on a desktop, so it must be set explicitly):
 
 ```bash
-sudo install -Dm644 configs/system/sleep.conf.d-hibernate.conf \
+sudo install -Dm644 configs/desktop-intel-nvidia/system/sleep.conf.d-hibernate.conf \
      /etc/systemd/sleep.conf.d/10-hibernate.conf      # HibernateDelaySec=60min
 ```
 
@@ -488,7 +509,7 @@ sudo install -Dm644 configs/system/sleep.conf.d-hibernate.conf \
   (32 G partition). If swap is smaller than that, logind refuses to hibernate —
   enlarge swap.
 - **`resume=` on the kernel cmdline** pointing at the swap partition's UUID
-  (`resume=UUID=…` — already in `configs/system/grub.snippet` / GRUB cmdline).
+  (`resume=UUID=…` — already in `configs/shared/system/grub.snippet` / GRUB cmdline).
 - **`systemd` initrd hook** in `/etc/mkinitcpio.conf` `HOOKS` — it handles
   resume automatically (no separate `resume` hook needed with the systemd init).
 - **NVIDIA only:** suspend/hibernate corrupt the GPU on resume unless you enable
@@ -515,7 +536,7 @@ sudo systemctl suspend-then-hibernate                        # test manually onc
 Two **machine-specific** suspend bugs hit this box. Both fixes live on the
 system (`/etc`, `/usr/lib`), **not** in `~/.config`, and both are tied to *this*
 hardware — copy them only if you have the same Logitech receiver and MT7925
-Wi-Fi card. Source copies are in [`configs/system/`](./configs/system).
+Wi-Fi card. Source copies are in [`configs/desktop-intel-nvidia/system/`](./configs/desktop-intel-nvidia/system).
 
 ### 1. Immediately wakes back up after Suspend
 
@@ -538,7 +559,7 @@ lsusb            # map a 046d:cXXX id to a device
 **Fix** — a udev rule disarms the receiver persistently (survives reboot/replug):
 
 ```bash
-sudo cp configs/system/90-disable-logitech-wake.rules \
+sudo cp configs/desktop-intel-nvidia/system/90-disable-logitech-wake.rules \
         /etc/udev/rules.d/90-disable-logitech-wake.rules
 sudo udevadm control --reload
 # apply now without replugging (path from the loop above, e.g. 1-2):
@@ -562,7 +583,7 @@ the only reliable recovery is reloading the driver.
 after resume, so the chip re-initializes cleanly and NetworkManager auto-reconnects:
 
 ```bash
-sudo cp configs/system/mt7925e-resume-fix \
+sudo cp configs/desktop-intel-nvidia/system/mt7925e-resume-fix \
         /usr/lib/systemd/system-sleep/mt7925e-resume-fix
 sudo chmod +x /usr/lib/systemd/system-sleep/mt7925e-resume-fix   # MUST be executable + root-owned
 ```
@@ -635,7 +656,7 @@ for bash) does **not** auto-exec Hyprland. The intended note in `~/.zprofile`:
 > start-hyprland… highly not recommended"* warning. Either way, do **not**
 > `sudo` it.
 
-> **Why not greetd/tuigreet?** A `configs/greetd/` config is kept in the repo as
+> **Why not greetd/tuigreet?** A `configs/shared/greetd/` config is kept in the repo as
 > an alternative, but it's **not used by default**: on mismatched dual monitors
 > the NVIDIA text-console clone bug (Step 6) leaves the greeter zoomed/cropped,
 > and the workaround (`fbdev=0`) black-screened this hardware entirely. A plain
@@ -682,7 +703,7 @@ Edit `/etc/default/grub`, set:
 ```
 GRUB_TERMINAL_OUTPUT=console
 ```
-(`configs/system/grub.snippet` shows the exact lines used.) Then regenerate:
+(`configs/shared/system/grub.snippet` shows the exact lines used.) Then regenerate:
 
 ```bash
 sudo grub-mkconfig -o /boot/grub/grub.cfg
@@ -695,10 +716,10 @@ This forces a plain white-on-black text menu (overrides any theme/gfxmode).
 ## Step 6 — Console font (login size)
 
 On a HiDPI/4K panel the default console font is microscopic, which makes the
-text login look tiny. Set a big bitmap font (`configs/system/vconsole.conf`):
+text login look tiny. Set a big bitmap font (`configs/desktop-intel-nvidia/system/vconsole.conf`):
 
 ```bash
-sudo cp configs/system/vconsole.conf /etc/vconsole.conf   # FONT=ter-132b
+sudo cp configs/desktop-intel-nvidia/system/vconsole.conf /etc/vconsole.conf   # FONT=ter-132b
 ```
 `ter-132b` is the largest Terminus (16×32). Smaller steps: `ter-128b`, `ter-124b`.
 On a 1080p screen, `ter-116b`/`ter-118b` is plenty. Applied at boot by
@@ -788,7 +809,7 @@ If the config has an error, Hyprland still boots with emergency binds
 
 ## macOS-style Alt = Command (xremap)
 
-`xremap` (`configs/xremap/config.yml`, deployed to `~/.config/xremap/config.yml`)
+`xremap` (`configs/shared/xremap/config.yml`, deployed to `~/.config/xremap/config.yml`)
 makes **Alt behave like the macOS Command key** for app shortcuts: `Alt+C/V/X/A/Z/S/F/T/W/N/R/P/O/L` and `Alt+Enter` are remapped to their `Ctrl+…` equivalents. A `foot`-only block (listed **first**, so it wins) instead maps
 `Alt+C/V/T/W/N` to `Ctrl+Shift+…` so the terminal keeps its copy/paste/new-tab
 bindings, and `Alt+K → Ctrl+L` clears. `exact_match` is off, so extra modifiers
@@ -840,12 +861,12 @@ sudo pacman -S --needed thunar tumbler
 > `exo-preferred-applications` GUI, so Thunar can't resolve a `TerminalEmulator`
 > and throws *"Could not find fallback TerminalEmulator application."* Fix it by
 > registering `foot` as the exo terminal helper manually (the two files in
-> `configs/xfce4/`):
+> `configs/shared/xfce4/`):
 >
 > ```bash
 > mkdir -p ~/.local/share/xfce4/helpers ~/.config/xfce4
-> cp configs/xfce4/helpers/foot.desktop ~/.local/share/xfce4/helpers/   # defines the helper
-> cp configs/xfce4/helpers.rc          ~/.config/xfce4/                 # selects it: TerminalEmulator=foot
+> cp configs/shared/xfce4/helpers/foot.desktop ~/.local/share/xfce4/helpers/   # defines the helper
+> cp configs/shared/xfce4/helpers.rc          ~/.config/xfce4/                 # selects it: TerminalEmulator=foot
 > # verify (should open foot in $HOME):
 > exo-open --launch TerminalEmulator --working-directory "$HOME"
 > ```
@@ -923,7 +944,7 @@ Levers (all imperfect, because toolkit scaling is integer-quantized):
 3. **Real fix:** build the app against **GTK4 / webkitgtk-6.0**, which *does* do
    fractional scaling → crisp with zero hacks.
 
-**Worked example** (the `leogit` Tauri app) — `configs/examples/leogit.sh`:
+**Worked example** (the `leogit` Tauri app) — `configs/shared/examples/leogit.sh`:
 ```bash
 export WEBKIT_DISABLE_DMABUF_RENDERER=1   # NVIDIA WebKitGTK render fix
 export GDK_BACKEND=x11                     # run on XWayland...

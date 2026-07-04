@@ -1,0 +1,35 @@
+// ~/.config/waybar/config.jsonc — minimal black bar. LAPTOP: single monitor.
+//
+// One bar object targeting the internal panel eDP-1. The custom/wsN tags pass
+// the monitor name to ws-state, which reports a tag active/occupied only if that
+// workspace lives on this monitor (empty ones collapse to zero width via CSS).
+// Everything else (clock, audio, network, battery, the module list) is shared
+// via shared.jsonc.
+//
+// The desktop config keeps a second bar object per extra monitor; add one here
+// (with its own "output" and ws-state <output>) if you attach an external
+// display you want a bar on. `hyprctl monitors` lists output names.
+//
+// Why custom tags instead of the native hyprland/workspaces module: its click
+// sends `dispatch workspace N`, which the Lua config rejects as a syntax error.
+// `waybar-ws-listener` (autostarted from hyprland.lua) signals SIGRTMIN+1 to
+// refresh every tag on any workspace/monitor change.
+//
+// left-click  -> focus the workspace.
+// right-click -> rename it (ws-rename pops a fuzzel text box).
+[
+  {
+    "include": ["~/.config/waybar/shared.jsonc"],
+    "output": "eDP-1",
+    "custom/ws1":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 1",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"1\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 1" },
+    "custom/ws2":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 2",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"2\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 2" },
+    "custom/ws3":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 3",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"3\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 3" },
+    "custom/ws4":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 4",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"4\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 4" },
+    "custom/ws5":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 5",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"5\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 5" },
+    "custom/ws6":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 6",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"6\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 6" },
+    "custom/ws7":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 7",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"7\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 7" },
+    "custom/ws8":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 8",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"8\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 8" },
+    "custom/ws9":  { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 9",  "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"9\" })'",  "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 9" },
+    "custom/ws10": { "format": "{}", "return-type": "json", "interval": "once", "signal": 1, "exec": "$HOME/.config/hypr/scripts/ws-state eDP-1 10", "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"10\" })'", "on-click-right": "$HOME/.config/hypr/scripts/ws-rename 10" }
+  }
+]
