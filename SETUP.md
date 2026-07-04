@@ -438,7 +438,7 @@ What each file is:
 | `hypr/scripts/sys-stats` | emits waybar JSON for the `custom/cpu` (usage + model/freq/temp/power tooltip) and `custom/gpu` (NVIDIA utilization + temp/VRAM/power tooltip, `nvidia-smi`) modules — see [CPU and GPU indicators](#cpu-and-gpu-indicators). Needs `configs/shared/system/81-rapl-readable.rules` for the CPU-watt tooltip field |
 | `hypr/hypridle.conf` | idle ladder: lock @5min, screen off @10min, suspend-then-hibernate @60min (hyprlang format) — see [Idle, lock & hibernate](#idle-lock--hibernate) |
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
-| `foot/foot.ini` | black terminal, `SF Mono:size=11` font |
+| `foot/foot.ini` | black terminal, `SF Mono` (`size=11` desktop, `size=12` ideapad). **Per-device** (`dpi-aware`): `yes` on the desktop, `no` on the ideapad — its 157-DPI eDP-1 at `scale=1` renders the font ~1.6× huge otherwise, so `dpi-aware=no` + a one-point bump lands it right |
 | `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |
 | `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem/gpu · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). `custom/cpu` + `custom/gpu` are fed by `hypr/scripts/sys-stats` (see [CPU and GPU indicators](#cpu-and-gpu-indicators)). Both bars pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
@@ -446,9 +446,10 @@ What each file is:
 | `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |
 | `gtk-3.0/settings.ini` | GTK theme = **adw-gtk3-dark** (`adw-gtk-theme`, extra repo) for dark widgets/menus, icon theme = Papirus-Dark (real app icons). Also run `gsettings set org.gnome.desktop.interface color-scheme prefer-dark` + `gtk-theme adw-gtk3-dark` so GTK4/libadwaita apps follow (see [App dock](#app-dock)) |
 | `dunst/dunstrc` | black notifications |
-| `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark), `SF Mono:size=13` |
+| `fuzzel/fuzzel.ini` | launcher: flat black, white-bar selection, app icons (Papirus-Dark), `SF Mono:size=13`. **Per-device** `dpi-aware` like `foot.ini` (ideapad sets `no`) |
 | `xremap/config.yml` | macOS-style key remaps — **Alt acts as Command** (Alt+C/V/X/A/Z/S/F/… → Ctrl+…); a `foot`-only block keeps terminal copy/paste on Ctrl+Shift. Needs `xremap-hypr-bin` for per-app matching — see [macOS-style Alt = Command](#macos-style-alt--command-xremap) |
 | `systemd/user/xremap.service` | user unit that autostarts xremap; `PartOf`/`WantedBy=graphical-session.target` (see Step 4 — the target must be started for it to run) |
+| `systemd/user/hyprland-session.target` | the session target `hyprland.lua` starts on launch; `BindsTo=graphical-session.target` so it pulls the graphical session up (and everything `WantedBy` it — xremap, portals). **Without this unit the start fails "not found" and nothing autostarts** (see Step 4) |
 
 > **hypridle/hyprlock use the old `.conf` (hyprlang) format** — that's correct;
 > only the main Hyprland config moved to Lua. Other `hypr*` tools didn't.
@@ -460,6 +461,9 @@ What each file is:
 - **Keyboard:** `input = { kb_layout = "us" }` — change if not US.
 - **Focus:** `input = { follow_mouse = 0 }` — focus changes only on click, not on
   hover. Set back to `1` for classic focus-follows-mouse.
+- **Touchpad (laptop):** the ideapad lua sets `input.touchpad = { natural_scroll =
+  true }` (content follows the fingers, macOS-style). Nested subcategory, so it's a
+  `touchpad = { ... }` table inside `input`. Laptop-only — the desktop lua omits it.
 
 ---
 
@@ -680,19 +684,26 @@ hl.on("hyprland.start", function()
 end)
 
 hl.on("hyprland.shutdown", function()
-  hl.exec_cmd("systemctl --user stop hyprland-session.target")
+  hl.exec_cmd("systemctl --user stop graphical-session.target")
 end)
 ```
 
 Importing the env **before** starting the target is what lets those services
-inherit `WAYLAND_DISPLAY`. `hyprland-session.target` `BindsTo`
-`graphical-session.target`, so starting it pulls the whole session up.
+inherit `WAYLAND_DISPLAY`. `hyprland-session.target` (shipped at
+`configs/shared/systemd/user/`, deployed by `deploy.sh`) `BindsTo`
+`graphical-session.target`, so **starting** it pulls the whole session up;
+on shutdown **stopping `graphical-session.target`** cascades back down (BindsTo
+stops the session target, `PartOf` stops each service — stopping
+`hyprland-session.target` alone leaves the session up).
 
 > **Symptom if this is missing:** `xremap` (and the polkit agent, portals, etc.)
 > just don't run, even though Hyprland is up. Check with
 > `systemctl --user is-active graphical-session.target` — if it's `inactive`
 > while Hyprland runs, this bootstrap didn't fire. This is the one thing a
 > display manager did for free that the bare `getty` path must do explicitly.
+> A common cause: the `hyprland-session.target` unit isn't deployed —
+> `systemctl --user cat hyprland-session.target` should print it; if it says
+> "No files found", redeploy (`deploy.sh`) and `systemctl --user daemon-reload`.
 
 ---
 

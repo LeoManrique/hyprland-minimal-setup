@@ -23,6 +23,11 @@ login, and a text GRUB. Designed to grow from a bare TTY into a productive setup
 - **NVIDIA is optional** and clearly isolated (skip it on AMD/Intel).
 - **Fractional-scaling + GTK3/webview apps** (Tauri/WebKitGTK) blur — SETUP.md
   documents the working fix (XWayland zero-scaling + `GDK_DPI_SCALE`).
+- **Per-device terminal/launcher font DPI** — `foot`/`fuzzel` size fonts in
+  points and, by default, scale them by the panel's *physical* DPI. On the
+  157-DPI ideapad panel at `scale=1` that inflates text ~1.6×, so those two
+  files are per-device with `dpi-aware=no` on the laptop (the desktop keeps
+  `yes`). See SETUP.md.
 - **gnome-keyring removed** — it popped an unlock dialog on every getty login
   (no PAM step to auto-unlock it). Uninstalled; SETUP.md Step 1 explains why.
 - **Leftover GNOME desktop stripped** — gdm/shell/mutter/session/control-center/

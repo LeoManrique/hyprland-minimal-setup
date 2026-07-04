@@ -1,0 +1,10 @@
+[Unit]
+Description=Hyprland compositor session
+Documentation=man:systemd.special(7)
+# Starting this target activates graphical-session.target (BindsTo pulls it in),
+# which in turn starts every unit installed WantedBy=graphical-session.target
+# (xremap, portals, gvfs). hyprland.lua starts this on `hyprland.start`. Without
+# this unit file the start fails "Unit not found" and none of those run.
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target

@@ -137,7 +137,7 @@ end)
 -- starts a clean session instead of leaving xremap/portals bound to a stale
 -- WAYLAND_DISPLAY from the previous run.
 hl.on("hyprland.shutdown", function()
-  hl.exec_cmd("systemctl --user stop hyprland-session.target")
+  hl.exec_cmd("systemctl --user stop graphical-session.target")
 end)
 
 --------------------------------------------------------------------------------

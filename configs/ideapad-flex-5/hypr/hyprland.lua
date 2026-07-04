@@ -56,6 +56,9 @@ hl.config({
     kb_layout = "us",             -- <-- change to your layout if needed
     follow_mouse = 0,            -- focus changes only on click, not on hover
     sensitivity = 0,
+    touchpad = {
+      natural_scroll = true,      -- content follows fingers (macOS-style), laptop touchpad only
+    },
   },
 
   misc = {
@@ -136,7 +139,7 @@ end)
 -- starts a clean session instead of leaving xremap/portals bound to a stale
 -- WAYLAND_DISPLAY from the previous run.
 hl.on("hyprland.shutdown", function()
-  hl.exec_cmd("systemctl --user stop hyprland-session.target")
+  hl.exec_cmd("systemctl --user stop graphical-session.target")
 end)
 
 --------------------------------------------------------------------------------
