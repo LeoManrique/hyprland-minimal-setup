@@ -26,13 +26,15 @@ fi
 copytree() {   # copytree <srcroot>  — copy one config root into the live dirs
   local s="$1"; [ -d "$s" ] || return 0
   mkdir -p ~/.config/hypr/scripts ~/.config/foot ~/.config/fuzzel ~/.config/dunst \
-           ~/.config/waybar ~/.config/gtk-3.0 ~/.config/xremap ~/.config/systemd/user \
-           ~/.config/nwg-dock-hyprland ~/.config/xfce4 ~/.local/share/xfce4/helpers ~/.cache
+           ~/.config/waybar ~/.config/bluetui ~/.config/gtk-3.0 ~/.config/xremap \
+           ~/.config/systemd/user ~/.config/nwg-dock-hyprland ~/.config/xfce4 \
+           ~/.local/share/xfce4/helpers ~/.cache
   [ -d "$s/hypr" ]          && cp -r "$s/hypr/."          ~/.config/hypr/
   [ -d "$s/foot" ]          && cp -r "$s/foot/."          ~/.config/foot/
   [ -d "$s/fuzzel" ]        && cp -r "$s/fuzzel/."        ~/.config/fuzzel/
   [ -d "$s/dunst" ]         && cp -r "$s/dunst/."         ~/.config/dunst/
   [ -d "$s/waybar" ]        && cp -r "$s/waybar/."        ~/.config/waybar/
+  [ -d "$s/bluetui" ]       && cp -r "$s/bluetui/."       ~/.config/bluetui/
   [ -d "$s/gtk-3.0" ]       && cp -r "$s/gtk-3.0/."       ~/.config/gtk-3.0/
   [ -d "$s/xremap" ]        && cp -r "$s/xremap/."        ~/.config/xremap/
   [ -d "$s/systemd/user" ]  && cp -r "$s/systemd/user/."  ~/.config/systemd/user/

@@ -76,11 +76,13 @@ hl.config({
 --------------------------------------------------------------------------------
 -- WINDOW RULES
 --------------------------------------------------------------------------------
--- bluetui (the waybar bluetooth-click TUI) opens in a dedicated foot instance
--- launched with `--app-id=bluetui`, which Hyprland sees as the window `class`.
--- Float it as a small panel pinned to the top-right of the active monitor,
--- tucked just under the 26px bar. The waybar click toggles it (open ⇄ close)
--- and never stacks duplicates.
+-- Floating bluetui panel opened by the waybar bluetooth click via
+-- hypr/scripts/tui-panel: it opens bluetui in a foot instance tagged
+-- `--app-id=bluetui` (Hyprland sees that as the window `class`). tui-panel
+-- toggles it (open ⇄ close, no duplicates) and auto-closes it on focus loss;
+-- Esc closes it too (bluetui esc_quit). Float it as a small panel pinned to the
+-- top-right of the active monitor, tucked under the 26px bar. (Wifi has no such
+-- panel — it's a fuzzel picker, hypr/scripts/wifi-picker.)
 hl.window_rule({
   match = { class = "bluetui" },
   float = true,

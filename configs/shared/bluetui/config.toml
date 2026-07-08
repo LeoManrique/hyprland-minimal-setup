@@ -1,0 +1,6 @@
+# ~/.config/bluetui/config.toml — bluetui behaviour overrides.
+# The only override we need: let Esc close the panel (bluetui's defaults are
+# `q` / `ctrl+c`; everything else stays at its built-in default). The floating
+# panel is opened by the waybar bluetooth click via hypr/scripts/tui-panel,
+# which additionally auto-closes it on focus loss.
+esc_quit = true

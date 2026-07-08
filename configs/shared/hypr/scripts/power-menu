@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # Centered like the SUPER+R launcher (no --anchor, unlike audio-picker).
-pick() { fuzzel --dmenu --prompt "$1" --lines "${2:-8}" --width 20; }
+pick() { fuzzel --dmenu --keyboard-focus=on-demand --prompt "$1" --lines "${2:-8}" --width 20; }
 
 # Stage 1 — action. Glyphs are Nerd Font (JetBrainsMono, as in fuzzel.ini).
 choice=$(printf '%s\n' \

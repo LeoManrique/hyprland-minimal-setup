@@ -12,7 +12,7 @@ IN=""    # Nerd Font microphone (input / source)
 # Pinned top-right (like the bluetui panel), 12px inset under the bar. Anchor is
 # set here per-invocation, not in fuzzel.ini, so the SUPER+R launcher stays centered.
 pick() {
-  fuzzel --dmenu --prompt "$1" --lines "${2:-8}" --width 46 \
+  fuzzel --dmenu --keyboard-focus=on-demand --prompt "$1" --lines "${2:-8}" --width 46 \
     --anchor top-right --x-margin 12 --y-margin 40
 }
 

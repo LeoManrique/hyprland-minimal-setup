@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Toggle a floating TUI panel that auto-closes when it loses focus.
+
+    tui-panel <app-id> <command> [args...]
+
+Bound to a waybar click. Opens <command> in a floating `foot` window tagged
+`--app-id=<app-id>` (a hyprland.lua window_rule floats + pins it top-right);
+clicking again closes it. On top of the plain toggle it closes the panel the
+moment focus moves to any other window — it connects to Hyprland's event socket
+BEFORE launching the panel so the panel's own focus-in event can't be missed.
+Esc-to-close is left to the TUI itself (bluetui: esc_quit in its config).
+
+Used by the waybar bluetooth click (`tui-panel bluetui bluetui`). It's written
+generically so any TUI can be wrapped this way, but wifi deliberately doesn't —
+that's a fuzzel picker (hypr/scripts/wifi-picker), which needs no wrapper. No
+external deps (stdlib socket), same approach as waybar-ws-listener. If the event
+socket is unavailable we still open the panel — it just won't auto-close.
+"""
+import os
+import socket
+import subprocess
+import sys
+
+if len(sys.argv) < 3:
+    sys.exit("usage: tui-panel <app-id> <command> [args...]")
+
+app_id = sys.argv[1]
+cmd = sys.argv[2:]
+proc = os.path.basename(cmd[0])  # process name to toggle/kill (pkill -x)
+
+
+def open_panel():
+    subprocess.Popen(["foot", "--app-id=%s" % app_id, "-e", *cmd])
+
+
+# Toggle: an already-open panel just closes (its watcher then exits on its own).
+if subprocess.run(["pkill", "-x", proc]).returncode == 0:
+    sys.exit(0)
+
+try:
+    his = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+    xrd = os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.connect("%s/hypr/%s/.socket2.sock" % (xrd, his))
+except (KeyError, OSError):
+    open_panel()  # no event socket -> plain panel, no auto-close
+    sys.exit(0)
+
+# Socket is live: launch the panel now (after connecting, so we can't miss its
+# focus-in event), then close it as soon as focus lands on another window.
+open_panel()
+
+focused = False
+with sock.makefile("r", encoding="utf-8", errors="replace") as stream:
+    for line in stream:
+        name, _, data = line.rstrip("\n").partition(">>")
+        if name != "activewindow":
+            continue
+        if data.split(",", 1)[0] == app_id:
+            focused = True      # panel now has focus
+        elif focused:           # had focus, moved elsewhere -> close
+            subprocess.run(["pkill", "-x", proc])
+            break

@@ -147,13 +147,42 @@ sudo systemctl enable --now bluetooth
 The bar's bluetooth icon (`󰂯`) toggles `bluetui` (AUR), a keyboard-driven TUI
 for scanning/pairing/connecting — no commands to memorize. It opens in a
 floating `foot` window (`--app-id=bluetui`) pinned to the top-right of the
-active monitor via a `hl.window_rule` in `hyprland.lua`; the click is a true
-toggle (`pkill -x bluetui || foot ...`), so clicking again closes it and it
-never stacks duplicates:
+active monitor via a `hl.window_rule` in `hyprland.lua`. The click runs
+`hypr/scripts/tui-panel bluetui bluetui`, a small generic helper that toggles
+the panel (clicking again closes it, never stacks duplicates) and also
+**auto-closes it on focus loss** — it tails Hyprland's event socket (stdlib
+`socket`, no `socat`, same as `waybar-ws-listener`) and kills the TUI the moment
+focus moves to another window. **Esc also closes it**, via `esc_quit = true` in
+`configs/shared/bluetui/config.toml` (→ `~/.config/bluetui/config.toml`):
 
 ```bash
 yay -S --needed bluetui
 ```
+
+The bar's network icon (`󰤨`) handles wifi, but as a **`fuzzel` picker rather
+than a TUI** — `configs/shared/hypr/scripts/wifi-picker`, the twin of
+`audio-picker` below. Clicking it lists nearby networks pinned top-right (active
+marked ●, a signal glyph per network); pick one to connect (saved creds if
+known, else a `fuzzel` password prompt), or pick the active one to disconnect.
+If the radio is off the list offers to enable it. Opening the picker kicks a
+background scan (no in-list *rescan* row — `fuzzel` shows a static snapshot and
+can't refresh in place, so reopening is the refresh). It's just `nmcli` (from
+`networkmanager`) + `fuzzel` — both already installed — so there's no TUI to size
+or theme, no clipping, and (with `--keyboard-focus=on-demand`) it dismisses on
+**Esc** or a click outside for free (which is why wifi, unlike bluetooth, doesn't
+go through `tui-panel`).
+A TUI was tried and dropped: `nmtui` (newt) is light-themed and clips its
+fixed-width dialog when the window is narrow, and `impala` — the same-author TUI
+that visually matches `bluetui` — drives `iwd`, whereas this machine runs
+NetworkManager + `wpa_supplicant`.
+
+**Possible improvement:** `fuzzel` shows a static snapshot, so the list can't
+refresh live (no updating signal bars, new networks only on reopen) — the
+tradeoff for a themeable, zero-config picker. For true in-place refresh the path
+is a live TUI: `wlctl` (`aur/wlctl-git`), a fork of `impala` that talks to
+NetworkManager directly, wrapped in a floating panel via `hypr/scripts/tui-panel`
+(the same infra bluetui already uses). Not done now because it's an AUR `-git`
+dependency; revisit if the reopen-to-refresh model gets annoying.
 
 The bar's volume icon left-click runs `configs/shared/hypr/scripts/audio-picker`, a
 small two-stage `fuzzel` chooser (pinned top-right like the bluetui panel):
@@ -440,7 +469,7 @@ What each file is:
 | `hypr/hyprlock.conf` | minimal black lock screen w/ clock (hyprlang format) |
 | `foot/foot.ini` | black terminal, `SF Mono:weight=medium` (dedicated `SF-Mono-Medium.otf` face — a touch bolder/more solid than Regular, not fake-bolded). Size is per-device: `size=11` desktop, `size=12` ideapad. **Per-device** (`dpi-aware`): `yes` on the desktop, `no` on the ideapad — its 157-DPI eDP-1 at `scale=1` renders the font ~1.6× huge otherwise, so `dpi-aware=no` + a one-point bump lands it right. `[mouse-bindings] primary-paste=none` disables middle-click paste (a stray middle-click can't dump the selection into the shell; `Ctrl+Shift+V` still pastes the clipboard) |
 | `waybar/config.jsonc` | **one bar per monitor** (array of bar objects, each with its own `output`); defines the per-monitor clickable `custom/ws1..ws10` workspace tags (see [Clickable workspace tags](#clickable-workspace-tags)). Each bar includes `shared.jsonc` for everything else |
-| `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem/gpu · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). `custom/cpu` + `custom/gpu` are fed by `hypr/scripts/sys-stats` (see [CPU and GPU indicators](#cpu-and-gpu-indicators)). Both bars pinned top-right via window rules |
+| `waybar/shared.jsonc` | settings/modules shared by both bars: layout, workspaces centered · right = vol/bt/net/cpu/mem/gpu · tray · clock. Nerd Font glyphs, need `ttf-jetbrains-mono-nerd`. Volume: left-click → `audio-picker` (fuzzel device chooser), right-click mute, scroll = volume. Bluetooth: click → floating `bluetui` TUI (toggle). Wifi: click → `wifi-picker` (fuzzel network chooser). `custom/cpu` + `custom/gpu` are fed by `hypr/scripts/sys-stats` (see [CPU and GPU indicators](#cpu-and-gpu-indicators)). Both bars pinned top-right via window rules |
 | `waybar/style.css` | flat solid-black bar |
 | `nwg-dock-hyprland/pinned` | dock's pinned apps — one **window class** per line (`foot`, `google-chrome`, `code`, `dev.zed.Zed`); deployed to `~/.cache/nwg-dock-pinned` (see [App dock](#app-dock)) |
 | `nwg-dock-hyprland/style.css` | dock theme — transparent (icons-only), cyan `#33ccff` accent; deployed to `~/.config/nwg-dock-hyprland/style.css` (see [App dock](#app-dock)) |

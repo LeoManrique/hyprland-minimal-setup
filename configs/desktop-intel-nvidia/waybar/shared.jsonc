@@ -49,15 +49,17 @@
     "tooltip-format": "{controller_alias}",
     "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
     "tooltip-format-enumerate-connected": "{device_alias}",
-    "on-click": "pkill -x bluetui || foot --app-id=bluetui -e bluetui"
+    "on-click": "$HOME/.config/hypr/scripts/tui-panel bluetui bluetui"
   },
 
   "network": {
-    "format-wifi": "󰖩 {signalStrength}%",
+    "format-wifi": "{icon}",
+    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
     "format-ethernet": "󰈀",
     "format-disconnected": "󰖪",
     "tooltip-format": "{ifname} {ipaddr}",
-    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}"
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ifname} {ipaddr}",
+    "on-click": "$HOME/.config/hypr/scripts/wifi-picker"
   },
 
   // CPU utilization (text) + model/freq/temp/package-power in the tooltip.

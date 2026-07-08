@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# wifi-picker — connect to a wifi network via fuzzel, mirroring audio-picker:
+# a single top-right list of nearby networks (active marked ●, signal glyph),
+# selecting one connects (saved creds if known, else a fuzzel password prompt);
+# selecting the active network disconnects it. Bound to the waybar wifi-icon
+# left-click. Deps: nmcli (networkmanager) + fuzzel — no extra TUI, so nothing
+# to size or theme, and fuzzel dismisses on Esc / click-outside for free (that's
+# why wifi, unlike bluetooth, doesn't go through hypr/scripts/tui-panel).
+set -euo pipefail
+
+# Pinned top-right (like audio-picker / the bluetui panel), 12px inset under the
+# 26px bar. Anchor is set per-invocation, not in fuzzel.ini, so the SUPER+R
+# launcher stays centered. keyboard-focus=on-demand (not the default exclusive)
+# so a click on another window steals focus and dismisses the picker.
+pick()    { fuzzel --dmenu --keyboard-focus=on-demand --prompt "$1" --lines "${2:-9}" --width 34 \
+              --anchor top-right --x-margin 12 --y-margin 40; }
+askpass() { fuzzel --dmenu --keyboard-focus=on-demand --password --prompt "$1" --lines 0 --width 34 \
+              --anchor top-right --x-margin 12 --y-margin 40; }
+
+# Signal % -> the same 5-level wifi ramp the waybar network module uses.
+glyph() {
+  local s=$1
+  if   [ "$s" -ge 80 ]; then printf '󰤨'
+  elif [ "$s" -ge 60 ]; then printf '󰤥'
+  elif [ "$s" -ge 40 ]; then printf '󰤢'
+  elif [ "$s" -ge 20 ]; then printf '󰤟'
+  else                       printf '󰤯'; fi
+}
+
+# Radio off -> the only useful action is turning it back on.
+if [ "$(nmcli -t -f WIFI radio 2>/dev/null)" = "disabled" ]; then
+  [ -n "$(printf '󰖩  enable wifi' | pick 'wifi off: ' 1)" ] && nmcli radio wifi on
+  exit 0
+fi
+
+# Kick a scan in the background and show the current cached list right away —
+# fuzzel renders a static snapshot and can't refresh in place, so there's no
+# in-picker "rescan" button; NetworkManager keeps the cache fresh and each reopen
+# triggers another scan, so newly-appeared networks show up on the next open.
+nmcli dev wifi rescan >/dev/null 2>&1 &   # non-blocking (~30ms to request; scan finishes async)
+
+# Collapse the scan (terse IN-USE:SIGNAL:SECURITY:SSID) to one strongest row per
+# SSID, skipping hidden/empty ones. nmcli escapes ':' in a field as '\:'; SSID is
+# last, so rejoin fields 4..NF and strip the backslashes. Rows: SIG\tINUSE\tSEC\tSSID.
+rows=$(nmcli -t -f IN-USE,SIGNAL,SECURITY,SSID dev wifi list --rescan no 2>/dev/null | awk -F: '
+  { inuse=$1; sig=$2; sec=$3; ssid=$4; for (i=5;i<=NF;i++) ssid=ssid ":" $i; gsub(/\\/,"",ssid)
+    if (ssid=="") next
+    if (!(ssid in bsig) || sig+0 > bsig[ssid]+0) { bsig[ssid]=sig; buse[ssid]=inuse; bsec[ssid]=sec } }
+  END { for (s in bsig) print bsig[s] "\t" buse[s] "\t" bsec[s] "\t" s }' | sort -t "$(printf '\t')" -k1,1 -rn)
+
+# Build the menu: "<mark><glyph>  <ssid>\t<ssid>" (display column | ssid key).
+# Feed only the display column to fuzzel, then map the choice back — SSIDs can
+# contain spaces, so we can't re-parse the display line.
+active=""
+menu=$(while IFS="$(printf '\t')" read -r sig inuse sec ssid; do
+         [ -z "$ssid" ] && continue
+         mark="  "; [ "$inuse" = "*" ] && { mark="● "; active="$ssid"; }
+         printf '%s%s  %s\t%s\n' "$mark" "$(glyph "$sig")" "$ssid" "$ssid"
+       done <<< "$rows")
+
+choice=$(cut -f1 <<< "$menu" | pick 'wifi: ')
+[ -z "$choice" ] && exit 0
+key=$(awk -F'\t' -v c="$choice" '$1==c{print $2; exit}' <<< "$menu")
+
+# Selecting the already-connected network disconnects its device.
+if [ "$key" = "$active" ]; then
+  ifname=$(nmcli -t -f DEVICE,TYPE dev 2>/dev/null | awk -F: '$2=="wifi"{print $1; exit}')
+  [ -n "$ifname" ] && nmcli dev disconnect "$ifname" >/dev/null 2>&1 || true
+  exit 0
+fi
+
+# Connect. A saved profile (or an open network) connects with no prompt; if that
+# fails and the network is secured, ask for the password once and retry.
+if nmcli dev wifi connect "$key" >/dev/null 2>&1; then
+  exit 0
+fi
+sec=$(awk -F'\t' -v s="$key" '$4==s{print $3; exit}' <<< "$rows")
+[ -z "$sec" ] && exit 0                      # open network that just failed — give up
+pw=$(askpass "password for $key: ")
+[ -z "$pw" ] && exit 0
+nmcli dev wifi connect "$key" password "$pw" >/dev/null 2>&1 || true

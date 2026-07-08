@@ -12,7 +12,7 @@ From: GNOME/Wayland. AMD path — no NVIDIA, no MT7925/Logitech suspend fixes.
 - [x] xremap input access (input group + uinput node/module) + autostart fixed
 - [x] First launch from TTY — Hyprland runs; xremap live
 - [x] Fonts: foot/fuzzel dpi-aware=no (157-DPI eDP-1 was ~1.6× huge); foot SF Mono size=12 weight=medium
-- [x] Touchpad natural scrolling (input.touchpad.natural_scroll)
+- [x] Touchpad natural scrolling (input.touchpad.natural_scroll) + faster cursor (input.sensitivity 0.25)
 - [x] gdm disabled; plain getty + manual `start-hyprland` (verified post-reboot)
 - [x] GNOME stripped (gdm/shell/mutter/session/settings-daemon/control-center + nautilus + gnome-keyring + portal-gnome, ~97 pkgs). Keepers pinned explicit first: pipewire-pulse webkitgtk-6.0 gvfs udisks2 ffmpeg gst-plugins-good poppler-glib unzip
 - [x] Lid-close/resume verified (close + reopen resumes clean)
@@ -24,3 +24,6 @@ From: GNOME/Wayland. AMD path — no NVIDIA, no MT7925/Logitech suspend fixes.
 - SF Mono already installed; yay present; suspend/resume already clean (deep/S3).
 - Hibernate deferred (no resume= on cmdline, 8G swapfile) — using plain suspend.
 - xremap `--mouse` + `BTN_MIDDLE→BTN_LEFT`: middle click acts as left click.
+- waybar wifi: signal-strength bars icon (`format-icons`), no `%`.
+- bluetui panel: closes on focus loss (`hypr/scripts/tui-panel`) + on Esc (`bluetui/config.toml esc_quit`).
+- wifi: waybar network click → `hypr/scripts/wifi-picker` (fuzzel + nmcli), replaced nmtui panel.
