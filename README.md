@@ -1,5 +1,10 @@
 # Minimal "TTY-vibes" Hyprland
 
+> **`desktop-intel-nvidia` left this setup on 2026-09-01** and now runs KDE
+> Plasma — see the `kde-plasma-setup` repo. `ideapad-flex-5` still runs
+> Hyprland, so everything below stands; just note that the desktop-specific
+> sections describe a machine that has since moved on.
+
 A minimal, functional [Hyprland](https://hypr.land) desktop on **Arch Linux** —
 black everything, no wallpaper, a thin black bar, a dmenu-style launcher, a text
 login, and a text GRUB. Designed to grow from a bare TTY into a productive setup.
